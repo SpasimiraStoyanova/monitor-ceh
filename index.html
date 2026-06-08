@@ -19,7 +19,7 @@
     <div id="dashboard-grid">Зареждане на връзката...</div>
 
     <script>
-        // Твоите данни от Supabase
+        // Твоите данни (вече попълнени)
         const SUPABASE_URL = 'https://zdythzcgcjxwbxufunuh.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE';
 
@@ -27,29 +27,24 @@
 
         async function init() {
             const grid = document.getElementById('dashboard-grid');
-            
             try {
-                // 1. Взимаме данните
+                // Взимаме данните (провери дали имената на таблиците ти са точно тези!)
                 const { data: plan } = await client.from('plan').select('*');
                 const { data: routes } = await client.from('marshruti').select('*');
                 const { data: reports } = await client.from('otcheti').select('*');
 
-                grid.innerHTML = ''; // Изчистваме "Зареждане..."
+                grid.innerHTML = ''; 
 
                 if (!plan || plan.length === 0) {
                     grid.innerHTML = "Няма данни в плана.";
                     return;
                 }
 
-                // 2. Логика
                 plan.forEach(p => {
                     let dId = String(p['ID Детайл']).trim();
                     let target = p['Целево количество'] || 10;
-
-                    // Намираме маршрута за този детайл
                     let myRoute = routes.filter(r => String(r['Код на детайла']).trim() === dId);
                     
-                    // Намираме първата незавършена операция
                     let activeOp = null;
                     for (let step of myRoute) {
                         let opName = step['Име на операция'];
@@ -63,7 +58,6 @@
                         }
                     }
 
-                    // 3. Рендериране
                     if (activeOp) {
                         const card = document.createElement('div');
                         card.className = 'card';
@@ -77,13 +71,11 @@
                         grid.appendChild(card);
                     }
                 });
-
             } catch (err) {
                 grid.innerHTML = `<div class="error">ГРЕШКА: ${err.message}</div>`;
                 console.error(err);
             }
         }
-
         init();
     </script>
 </body>
