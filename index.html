@@ -2,52 +2,38 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <title>Диагностика</title>
+    <title>Производствен Монитор</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background: #1a1a1a; color: #fff; font-family: monospace; padding: 20px; }
-        .log { border-bottom: 1px solid #444; padding: 5px; color: #00ff00; }
+        body { background: #0f172a; color: #fff; font-family: sans-serif; padding: 20px; }
+        .card { background: #1e293b; padding: 15px; border-radius: 8px; margin: 10px; border-left: 4px solid #60a5fa; }
     </style>
 </head>
 <body>
-    <h1>Диагностика на монитора</h1>
-    <div id="log-container"></div>
+    <h1>Активни задачи</h1>
+    <div id="dashboard-grid"></div>
 
     <script>
-        const log = (msg) => {
-            const div = document.createElement('div');
-            div.className = 'log';
-            div.innerText = "> " + msg;
-            document.getElementById('log-container').appendChild(div);
-        };
-
-        const SUPABASE_URL = 'https://zdythzcgcjxwbxufunuh.supabase.co';
-        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE';
-
-        const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const client = supabase.createClient('https://zdythzcgcjxwbxufunuh.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE');
 
         async function init() {
-            log("Започвам връзка със Supabase...");
-            try {
-                const { data: plan, error: planErr } = await client.from('plan').select('*');
-                if (planErr) { log("ГРЕШКА при таблица 'plan': " + planErr.message); return; }
-                log("Успешно извлякох " + plan.length + " записа от 'plan'.");
+            const grid = document.getElementById('dashboard-grid');
+            const { data: plan } = await client.from('plan').select('*');
+            const { data: routes } = await client.from('marshruti').select('*');
 
-                const { data: routes, error: routeErr } = await client.from('marshruti').select('*');
-                if (routeErr) { log("ГРЕШКА при таблица 'marshruti': " + routeErr.message); return; }
-                log("Успешно извлякох " + routes.length + " записа от 'marshruti'.");
+            grid.innerHTML = ''; 
 
-                const { data: reports, error: repErr } = await client.from('otcheti').select('*');
-                if (repErr) { log("ГРЕШКА при таблица 'otcheti': " + repErr.message); return; }
-                log("Успешно извлякох " + reports.length + " записа от 'otcheti'.");
-
-                log("Всички данни са заредени. Анализирам...");
+            plan.forEach(p => {
+                let dId = String(p['ID Детайл']).trim();
+                // Търсим съвпадение, като игнорираме малки/големи букви и излишни интервали
+                let myRoute = routes.filter(r => String(r['Код на детайла']).trim().toLowerCase() === dId.toLowerCase());
                 
-                if (plan.length === 0) { log("Внимание: Таблица 'plan' е ПРАЗНА."); }
-
-            } catch (err) {
-                log("КРИТИЧНА ГРЕШКА: " + err.message);
-            }
+                if (myRoute.length === 0) {
+                    grid.innerHTML += `<div class="card">Детайл <b>${dId}</b> от плана НЕ е намерен в маршрутите!</div>`;
+                } else {
+                    grid.innerHTML += `<div class="card">Детайл <b>${dId}</b> е намерен! Операции: ${myRoute.length}</div>`;
+                }
+            });
         }
         init();
     </script>
