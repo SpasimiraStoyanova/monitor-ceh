@@ -5,18 +5,19 @@
     <title>Производствен Монитор</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { background-color: #1a1e29; color: #fff; font-family: sans-serif; padding: 20px; }
-        #dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        body { background-color: #1a1e29; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+        h1 { text-align: center; color: #8ab4f8; }
+        #dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
         .operation-card { background: #232838; padding: 20px; border-radius: 8px; border-top: 4px solid #4caf50; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        .detail-name { font-size: 20px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px; color: #8ab4f8; }
-        .operation-step { background: #1c202d; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .detail-name { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #ffffff; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .operation-step { background: #1c202d; padding: 12px; margin-bottom: 8px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #333; }
         .active-op { border-left: 4px solid #4caf50; background: #2a342c; }
         .active-op span { color: #4caf50; font-weight: bold; }
     </style>
 </head>
 <body>
-    <h1>Активно производство</h1>
-    <div id="dashboard-grid">Зареждане на монитора...</div>
+    <h1>Активно производство (Месечен план)</h1>
+    <div id="dashboard-grid">Зареждане на данните...</div>
 
     <script>
         const TARGET = 10;
@@ -26,26 +27,32 @@
         );
 
         async function init() {
-            // Взимаме данните
-            const { data: mkData } = await client.from('marshruti').select('*');
-            const { data: repData } = await client.from('otcheti').select('*');
+            const grid = document.getElementById('dashboard-grid');
 
-            if (!mkData || mkData.length === 0) {
-                document.getElementById('dashboard-grid').innerHTML = "Няма данни в Маршрутни карти.";
-                return;
+            // 1. Взимаме списъка с планирани детайли
+            const { data: planData } = await client.from('plan').select('"ID Детайл"');
+            const plannedIds = planData ? new Set(planData.map(p => String(p['ID Детайл']).trim())) : new Set();
+
+            // 2. Взимаме маршрутите
+            const { data: mkData } = await client.from('marshruti').select('*');
+            let routing = {};
+            
+            if(mkData) {
+                mkData.forEach(row => {
+                    let dId = String(row['Код на детайла'] || '').trim();
+                    
+                    // ФИЛТЪР: Ако има детайли в плана, показваме САМО тях!
+                    if (plannedIds.size > 0 && !plannedIds.has(dId)) return;
+
+                    let opName = String(row['Име на операция'] || '').trim();
+                    if (!dId || !opName) return;
+                    if (!routing[dId]) routing[dId] = [];
+                    routing[dId].push(opName);
+                });
             }
 
-            // Организираме маршрутите
-            let routing = {};
-            mkData.forEach(row => {
-                let dId = String(row['Код на детайла'] || '').trim();
-                let opName = String(row['Име на операция'] || '').trim();
-                if (!dId || !opName) return;
-                if (!routing[dId]) routing[dId] = [];
-                routing[dId].push(opName);
-            });
-
-            // Организираме отчетите
+            // 3. Взимаме отчетите
+            const { data: repData } = await client.from('otcheti').select('*');
             let totals = {};
             if(repData) {
                 repData.forEach(row => {
@@ -58,11 +65,16 @@
                 });
             }
 
-            // Рендерираме
-            const grid = document.getElementById('dashboard-grid');
+            // 4. Рендериране
             grid.innerHTML = '';
+            const keys = Object.keys(routing);
+            
+            if (keys.length === 0) {
+                grid.innerHTML = "Няма детайли в плана за показване.";
+                return;
+            }
 
-            Object.keys(routing).forEach(dId => {
+            keys.forEach(dId => {
                 const card = document.createElement('div');
                 card.className = 'operation-card';
                 card.innerHTML = `<div class="detail-name">${dId}</div><div class="list"></div>`;
