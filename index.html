@@ -2,112 +2,78 @@
 <html lang="bg">
 <head>
     <meta charset="UTF-8">
-    <title>Производствен Монитор</title>
+    <title>Производствен Монитор - Графика</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
     <style>
-        body { 
-            background: #0f172a; 
-            color: #fff; 
-            font-family: system-ui, -apple-system, sans-serif; 
-            padding: 20px; 
-            margin: 0;
-        }
-        h1 {
-            color: #f8fafc;
-            font-size: 24px;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #334155;
-            padding-bottom: 10px;
-        }
-        #dashboard-grid {
-            display: block;
-        }
-        .card { 
+        body { background: #0f172a; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
+        h1 { border-bottom: 2px solid #334155; padding-bottom: 10px; }
+        #graph-container { 
             background: #1e293b; 
-            padding: 16px; 
+            padding: 20px; 
             border-radius: 8px; 
-            margin: 12px 0; 
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-            transition: transform 0.2s;
-        }
-        .card:hover {
-            transform: translateX(4px);
-        }
-        .meta-info {
-            font-size: 12px; 
-            color: #94a3b8; 
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .node-relation {
-            margin-top: 6px;
-            font-size: 15px;
-        }
-        .quantity-badge {
-            margin-top: 10px; 
-            font-weight: bold;
-            font-size: 16px;
+            margin-top: 20px; 
+            overflow-x: auto; /* Позволява скролиране, ако графиката стане много голяма */
+            text-align: center;
         }
     </style>
 </head>
 <body>
 
-    <h1>Активен производствен план и компоненти (BOM)</h1>
-    <div id="dashboard-grid"></div>
+    <h1>Активни производствени потоци</h1>
+    <div id="graph-container">Зареждане на графиката...</div>
 
     <script>
-        // Твоят оригинален Supabase клиент
+        // Инициализация на чертожника (с тъмна тема, за да си ходи с дизайна)
+        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+
         const client = supabase.createClient(
             'https://zdythzcgcjxwbxufunuh.supabase.co', 
             'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
         );
 
         async function init() {
-            const grid = document.getElementById('dashboard-grid');
+            const container = document.getElementById('graph-container');
             
-            // Директно извличане на пресметнатите данни от новия рекурсивен изглед
-            const { data: materials, error } = await client
-                .from('общ_план_материали')
-                .select('*');
+            const { data: materials, error } = await client.from('общ_план_материали').select('*');
 
-            if (error) {
-                console.error("Грешка при зареждане на данните:", error);
-                grid.innerHTML = `<div class="card" style="border-left: 4px solid #ef4444;">Грешка при връзката с базата данни!</div>`;
+            if (error || !materials || materials.length === 0) {
+                container.innerHTML = '<p style="color: #ef4444;">Грешка или липсващ план.</p>';
                 return;
             }
 
-            grid.innerHTML = ''; 
+            // Започваме да пишем "кода" за графиката. RL означава Right-to-Left (от дясно на ляво)
+            let graphDefinition = 'graph RL\n';
 
-            if (!materials || materials.length === 0) {
-                grid.innerHTML = '<div class="card" style="border-left: 4px solid #94a3b8;">Няма активни позиции в таблица "plan".</div>';
-                return;
-            }
+            // Дефинираме цветовете
+            graphDefinition += 'classDef done fill:#16a34a,color:#fff,stroke:#fff;\n';    // Зелено
+            graphDefinition += 'classDef active fill:#2563eb,color:#fff,stroke:#fff;\n';  // Синьо
+            graphDefinition += 'classDef pending fill:#475569,color:#fff,stroke:#fff;\n'; // Сиво (чакащи)
 
-            // Обхождане и визуализиране на всеки детайл
             materials.forEach(item => {
-                // Първо ниво детайли получават син кант, поддетайлите (ниво 2+) получават оранжев кант
-                const borderColor = item.ниво === 1 ? '#60a5fa' : '#f59e0b';
-                // Текстът за отместване показва графично йерархията
-                const indentText = item.ниво > 1 ? ' ↳ Вложен в: ' : 'Възел / Изделие: ';
+                // Създаваме уникални ID-та за кутийките (премахваме интервали и символи)
+                let parentId = 'node_' + item.текущ_родител.replace(/[^a-zA-Z0-9]/g, '');
+                let childId = 'node_' + item.детайл_код.replace(/[^a-zA-Z0-9]/g, '');
 
-                grid.innerHTML += `
-                    <div class="card" style="border-left: 4px solid ${borderColor};">
-                        <div class="meta-info">
-                            План №${item.plan_id} | Основен продукт: <b>${item.краен_продукт}</b> (Ниво на вложеност: ${item.ниво})
-                        </div>
-                        <div class="node-relation">
-                            ${indentText} <b style="color: #cbd5e1;">${item.текущ_родител}</b>
-                        </div>
-                        <div class="node-relation" style="margin-left: ${item.ниво > 1 ? '15px' : '0px'};">
-                            Компонент за изработка/монтаж: <b style="color: #60a5fa;">${item.детайл_код}</b>
-                        </div>
-                        <div class="quantity-badge">
-                            Необходимо общо количество: <span style="color: #34d399;">${item.общо_необходимо_количество} бр.</span>
-                        </div>
-                    </div>
-                `;
+                // Рисуваме кутийките с имената на детайлите и нужните бройки
+                graphDefinition += `  ${parentId}["${item.текущ_родител}"]\n`;
+                graphDefinition += `  ${childId}["${item.детайл_код} (${item.общо_необходимо_количество} бр.)"]\n`;
+
+                // Рисуваме стрелката между тях. За момента текстът е тестов.
+                graphDefinition += `  ${childId} -->|"Чака операция"| ${parentId}\n`;
+                
+                // За момента правим всичко сиво (pending). По-късно ще добавим логиката за зелено и синьо.
+                graphDefinition += `  class ${parentId} pending;\n`;
+                graphDefinition += `  class ${childId} pending;\n`;
             });
+
+            // Караме библиотеката да нарисува графиката на екрана
+            try {
+                const { svg } = await mermaid.render('productionGraph', graphDefinition);
+                container.innerHTML = svg;
+            } catch (err) {
+                console.error("Грешка при чертане:", err);
+            }
         }
         
         init();
