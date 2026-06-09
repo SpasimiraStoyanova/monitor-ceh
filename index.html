@@ -1,97 +1,631 @@
 <!DOCTYPE html>
 <html lang="bg">
 <head>
-    <meta charset="UTF-8">
-    <title>Производствен Монитор</title>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@9.4.3/dist/mermaid.min.js"></script>
-    <style>
-        body { background: #0f172a; color: #fff; font-family: sans-serif; padding: 20px; margin: 0; }
-        h1 { border-bottom: 2px solid #334155; padding-bottom: 10px; font-size: 22px; }
-        #graph-container { 
-            background: #1e293b; 
-            padding: 30px; 
-            border-radius: 8px; 
-            margin-top: 20px; 
-            overflow-x: auto; 
-            display: flex;
-            justify-content: center;
-        }
-    </style>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Жив Монитор на Производството</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sofia+Sans:wght@400;600;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* ТЪМНА ПРОМИШЛЕНА ТЕМА */
+    :root {
+      --bg-color: #0f172a; 
+      --card-bg: transparent; 
+      --text-main: #f8fafc; 
+      --text-muted: #94a3b8;
+      --border-color: #334155; 
+      --header-bg: #1e293b;
+    }
+    
+    ::-webkit-scrollbar { display: none; }
+    * { scrollbar-width: none; box-sizing: border-box; }
+
+    body { font-family: 'Sofia Sans', sans-serif; background-color: var(--bg-color); margin: 8px; color: var(--text-main); overflow: auto; }
+    
+    #loading { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-color); display: flex; align-items: center; justify-content: center; z-index: 1000; font-weight: 800; font-size: 24px; letter-spacing: 2px; flex-direction: column; text-align: center; padding: 20px;}
+    #error-box { color: #ef4444; margin-top: 20px; font-size: 18px; max-width: 800px; word-wrap: break-word; }
+    #svg-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; }
+
+    /* СТРУКТУРА НА ТАБЛОТО */
+    .layout-wrapper { display: flex; flex-direction: column; gap: 12px; min-height: 95vh; position: relative; z-index: 10; min-width: max-content; padding-right: 12px; padding-bottom: 20px;}
+    
+    .top-section { display: flex; gap: 12px; min-width: max-content; flex: 1; }
+    .left-zone { display: flex; flex-direction: row; gap: 12px; min-width: max-content; flex: 4; }
+    .right-zone { display: flex; flex-direction: column; min-width: 350px; flex: 1; }
+
+    .bottom-section { display: flex; gap: 12px; min-width: max-content; flex: 1.5; }
+
+    /* ПРОЗОРЦИ */
+    .window { background: var(--header-bg); border: 1px solid var(--border-color); border-radius: 6px; display: flex; flex-direction: column; box-shadow: 0 8px 20px rgba(0,0,0,0.4); flex: 1; min-width: max-content; overflow: hidden; }
+    
+    .window-header { 
+      color: #f8fafc; padding: 10px 14px; font-size: 14px; font-weight: 900; 
+      letter-spacing: 1.5px; text-transform: uppercase; 
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex; align-items: center;
+    }
+    
+    .window-body { padding: 12px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; }
+
+    /* ЗОНИ И ЛЕНТИ */
+    .lane { padding-bottom: 6px; margin-bottom: 6px; display: flex; flex-direction: column; gap: 4px; border: none; }
+    .lane:last-child { margin-bottom: 0; padding-bottom: 0; }
+    
+    .columns-mode { flex-direction: row !important; gap: 20px; }
+    .col-lane { padding-right: 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; border: none; }
+    .col-lane:last-child { padding-right: 0; }
+
+    .lane-title { font-size: 12px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: inline-block; letter-spacing: 1px;}
+
+    .plan-group { border-left: 3px solid #475569; padding-left: 12px; margin-bottom: 8px; display: flex; flex-direction: column; }
+    .plan-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+    .family-row { display: flex; flex-direction: row; gap: 30px; padding: 5px 0; border-bottom: none; align-items: center; }
+    .family-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .bom-column { display: flex; flex-direction: column; gap: 14px; justify-content: center; position: relative; z-index: 2;}
+
+    .tooltip-container { position: relative; display: inline-block; }
+    .material-warning-trigger { cursor: pointer; font-size: 14px; font-weight: bold; color: #ef4444; margin-left: 2px; user-select: none; }
+    .vsm-tooltip { display: none; position: absolute; left: 50%; bottom: 125%; transform: translateX(-50%); background: #020617; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; z-index: 110; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #ef4444; }
+    .vsm-tooltip::before { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 5px; border-style: solid; border-color: #020617 transparent transparent transparent; }
+
+    /* GPS ВИЗУАЛИЗАЦИЯ */
+    .vsm-node { display: flex; flex-direction: column; gap: 2px; padding: 0; width: max-content; background: transparent; border: none; }
+    .vsm-header { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; border: none; padding-bottom: 2px; margin-bottom: 0px;}
+    
+    .vsm-title { font-size: 16px; font-weight: 900; letter-spacing: 0.5px; }
+    .title-green { color: #22c55e !important; }     
+    .title-blue { color: #60a5fa !important; }      
+    .title-yellow { color: #facc15 !important; text-shadow: 0 0 10px rgba(250,204,21,0.3); } 
+    .title-gray { color: #cbd5e1 !important; }      
+    
+    .vsm-qty { font-size: 14px; font-weight: 800; color: #64748b; }
+
+    /* ОПЕРАЦИИ */
+    .vsm-ops { display: flex; align-items: baseline; gap: 6px; flex-wrap: nowrap; }
+    .op-text { white-space: nowrap; font-family: 'Sofia Sans', sans-serif; }
+    
+    .op-past { font-size: 13px; font-weight: 600; color: #22c55e; opacity: 0.8; }
+    
+    .op-focus { font-size: 17px; font-weight: 900; letter-spacing: 0.5px; }
+    .op-focus.active { color: #60a5fa; text-shadow: 0 0 10px rgba(59,130,246,0.3); } 
+    .op-focus.waiting { color: #94a3b8; } 
+    
+    .op-future { font-size: 13px; font-weight: 600; color: #64748b; opacity: 0.7; }
+    
+    /* ХОРИЗОНТАЛНА ХАРМОНИКА */
+    .harmony-toggle { color: #475569; font-weight: 900; font-size: 14px; cursor: pointer; user-select: none; margin-right: 2px; transition: color 0.2s; }
+    .harmony-toggle:hover { color: #60a5fa; }
+    .hidden-history { display: none !important; }
+
+    .arr { color: #475569; font-weight: bold; font-size: 12px; margin: 0 2px;}
+    .machine-view .hide-on-machine { display: none !important; }
+  </style>
 </head>
 <body>
 
-    <h1>Живо проследяване на производството</h1>
-    <div id="graph-container">Зареждане на данните...</div>
+  <div id="loading">
+    <div>Сглобяване на VSM потока от Supabase... ⚙️</div>
+    <div id="error-box"></div>
+  </div>
+  
+  <svg id="svg-overlay"></svg>
 
-    <script>
-        mermaid.initialize({ startOnLoad: false, theme: 'dark' });
+  <div class="layout-wrapper">
+    <div class="top-section">
+      <div class="left-zone">
+        <div class="window"><div class="window-header" style="border-top: 3px solid #3b82f6; background: linear-gradient(180deg, rgba(59,130,246,0.1) 0%, transparent 100%);">ТЕЛА</div><div class="window-body" id="w-tiela"></div></div>
+        <div class="window"><div class="window-header" style="border-top: 3px solid #fb923c; background: linear-gradient(180deg, rgba(251,146,60,0.1) 0%, transparent 100%);">ПРЕДНИ КАПАЦИ</div><div class="window-body" id="w-predni"></div></div>
+        <div class="window"><div class="window-header" style="border-top: 3px solid #c084fc; background: linear-gradient(180deg, rgba(192,132,252,0.1) 0%, transparent 100%);">ЗАДНИ КАПАЦИ</div><div class="window-body" id="w-zadni"></div></div>
+        <div class="window"><div class="window-header" style="border-top: 3px solid #fb7185; background: linear-gradient(180deg, rgba(251,113,133,0.1) 0%, transparent 100%);">МПР</div><div class="window-body" id="w-mpr"></div></div>
+      </div>
+      
+      <div class="right-zone">
+        <div class="window" style="height: 100%;">
+          <div class="window-header" style="border-top: 3px solid #f8fafc; background: linear-gradient(180deg, rgba(248,250,252,0.1) 0%, transparent 100%);">СГЛОБЯВАНЕ (РЕЗОЛВЕРИ)</div>
+          <div class="window-body" id="w-assembly"></div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bottom-section">
+      <div class="window" style="flex: 2.2;">
+        <div class="window-header" style="border-top: 3px solid #94a3b8; background: linear-gradient(180deg, rgba(148,163,184,0.1) 0%, transparent 100%);">РОТОРИ - ВАЛОВЕ - ЛАГЕРНИ ВЪЗЛИ</div>
+        <div class="window-body" style="padding: 12px;">
+          <div class="lane"><span class="lane-title">ВАР. 11</span><div id="w-var11"></div></div>
+          <div class="lane"><span class="lane-title">ВАР. 25</span><div id="w-var25"></div></div>
+          <div class="lane"><span class="lane-title">ЛАГЕРНИ ВЪЗЛИ</span><div id="w-bearings"></div></div>
+        </div>
+      </div>
+      
+      <div style="flex: 1.2; display: flex; flex-direction: column; gap: 12px;">
+        <div class="window" style="flex: 1.2;">
+          <div class="window-header" style="border-top: 3px solid #818cf8; background: linear-gradient(180deg, rgba(129,140,248,0.1) 0%, transparent 100%);">МАЛКИ ДЕТАЙЛИ</div>
+          <div class="window-body columns-mode">
+            <div class="col-lane"><span class="lane-title">ЩИФТОВЕ</span><div id="w-small-pins"></div></div>
+            <div class="col-lane"><span class="lane-title">ШПИЛКИ</span><div id="w-small-studs"></div></div>
+            <div class="col-lane"><span class="lane-title">РОТОРНИ ПАКЕТИ</span><div id="w-small-rotors"></div></div>
+            <div class="col-lane"><span class="lane-title">ДРУГИ</span><div id="w-small-others"></div></div>
+          </div>
+        </div>
 
-        const client = supabase.createClient(
-            'https://zdythzcgcjxwbxufunuh.supabase.co', 
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
-        );
+        <div class="window" style="flex: 1;">
+          <div class="window-header" style="border-top: 3px solid #f43f5e; background: linear-gradient(180deg, rgba(244,63,94,0.1) 0%, transparent 100%);">СТАТОРИ И ТРАНСФОРМАТОРИ</div>
+          <div class="window-body" id="w-statori"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-        async function init() {
-            const container = document.getElementById('graph-container');
-            
-            // Зареждаме статусите от новия изглед
-            const { data: statusData, error } = await client.from('монитор_статус').select('*');
+  <script>
+    // Проверка дали е Машинен или Централен Монитор
+    if(new URLSearchParams(window.location.search).get('view') === 'machine') {
+        document.body.classList.add('machine-view');
+    }
 
-            if (error || !statusData || statusData.length === 0) {
-                container.innerHTML = '<p style="color: #ef4444;">Няма активни процеси или възникна грешка.</p>';
-                return;
-            }
+    // Инициализация на Supabase
+    const client = supabase.createClient(
+        'https://zdythzcgcjxwbxufunuh.supabase.co', 
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
+    );
 
-            // graph RL означава Right-to-Left (децата вдясно, крайният продукт вляво)
-            let graphDef = 'graph RL\n';
+    let globalConnections = [];
+    
+    window.onload = function() {
+      loadData();
+      setInterval(loadData, 30000); // Опреснява се на всеки 30 секунди
+    };
 
-            // Дефинираме стиловете за кутийките
-            graphDef += 'classDef ready fill:#16a34a,color:#fff,stroke:#4ade80,stroke-width:2px;\n';   // Зелено
-            graphDef += 'classDef active fill:#2563eb,color:#fff,stroke:#60a5fa,stroke-width:2px;\n';  // Синьо
-            graphDef += 'classDef pending fill:#334155,color:#94a3b8,stroke:#475569,stroke-width:1px;\n'; // Тъмно сиво
+    async function loadData() {
+        try {
+            // 1. Изтегляме всички нужни данни едновременно
+            const [nodesResponse, tasksResponse] = await Promise.all([
+                client.from('монитор_мастър_данни').select('*'),
+                client.from('канбан_екран').select('*')
+            ]);
 
-            statusData.forEach(item => {
-                // Генерираме уникални ID-та за Mermaid
-                let pId = 'node_' + item.текущ_родител.replace(/[^a-zA-Z0-9]/g, '');
-                let cId = 'node_' + item.детайл_код.replace(/[^a-zA-Z0-9]/g, '');
+            if (nodesResponse.error) throw nodesResponse.error;
+            if (tasksResponse.error) throw tasksResponse.error;
 
-                // Рисуваме крайния родител (ако е ниво 1)
-                if (item.ниво === 1) {
-                    graphDef += `  ${pId}["${item.текущ_родител}"]\n`;
-                    graphDef += `  class ${pId} ready;\n`;
+            const nodesData = nodesResponse.data;
+            const activeTasks = tasksResponse.data;
+
+            let masterData = {
+                tiela: [], predni: [], zadni: [], mpr: [], statori: [], assembly: [],
+                var11: [], var25: [], bearings: [],
+                small_pins: [], small_studs: [], small_rotors: [], small_others: []
+            };
+            let connections = [];
+
+            nodesData.forEach(row => {
+                let n = {
+                    id: row.node_id,
+                    planId: row.plan_id,
+                    code: row.code,
+                    planQty: row.plan_qty,
+                    warehouseQty: row.ready_qty,
+                    globalState: row.ready_qty >= row.plan_qty ? 'green' : (row.ready_qty > 0 ? 'blue' : 'gray'),
+                    operations: [],
+                    drawingUrl: row.drawing_url
+                };
+
+                // Намираме текущата активна операция от Канбана
+                let active = activeTasks.find(t => t.plan_id === row.plan_id && t.name === row.code);
+                if (active) {
+                    n.globalState = 'blue';
+                    n.operations.push({ name: active.op, state: 'blue', completed: row.ready_qty });
+                } else if (row.ready_qty >= row.plan_qty) {
+                    n.operations.push({ name: 'Готов', state: 'green', completed: row.plan_qty });
+                } else {
+                    n.operations.push({ name: 'Чакащ', state: 'gray', completed: row.ready_qty });
                 }
 
-                // Рисуваме само детайлите, които имат някакъв статус
-                if (item.статус !== 'Чакащ') {
-                    // Форматираме името с малки цифри за прогреса
-                    let nodeLabel = `${item.детайл_код}<br/><span style='font-size: 11px; opacity: 0.8;'>(${item.изработено_количество} / ${item.общо_необходимо_количество} бр.)</span>`;
-                    
-                    graphDef += `  ${cId}["${nodeLabel}"]\n`;
-                    
-                    let opText = item.статус === 'Готов' ? 'Готов за монтаж' : (item.текуща_операция_име || 'В процес');
-                    
-                    // Стрелка
-                    graphDef += `  ${cId} -->|"${opText}"| ${pId}\n`;
-                    
-                    // Цвят според статуса
-                    let cssClass = item.статус === 'Готов' ? 'ready' : 'active';
-                    graphDef += `  class ${cId} ${cssClass};\n`;
+                // Генерираме стрелките (връзките)
+                if (row.parent_code && row.level > 1) {
+                    connections.push({ from: row.node_id, to: row.plan_id + '_' + row.parent_code });
+                }
+
+                // Разпределяме кутийката в правилния прозорец
+                let typeStr = (row.code + ' ' + (row.complexity_type || '')).toLowerCase().replace(/[\s\.\-\_]+/g, '');
+                
+                if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
+                else if (typeStr.includes("преден") || typeStr.includes("предни")) masterData.predni.push(n);
+                else if (typeStr.includes("заден") || typeStr.includes("задни")) masterData.zadni.push(n);
+                else if (typeStr.includes("мпр")) masterData.mpr.push(n);
+                else if (typeStr.includes("статор") || typeStr.includes("тороид") || typeStr.includes("трансформатор")) masterData.statori.push(n);
+                else if (typeStr.includes("резолвер") || typeStr.includes("сглоб") || typeStr.includes("готовоизделие")) masterData.assembly.push(n);
+                else if (typeStr.includes("роторвар11")) masterData.var11.push(n);
+                else if (typeStr.includes("роторвар25")) masterData.var25.push(n);
+                else if (typeStr.includes("лагер")) masterData.bearings.push(n);
+                else {
+                   if (typeStr.includes("щифт")) masterData.small_pins.push(n);
+                   else if (typeStr.includes("шпилк")) masterData.small_studs.push(n);
+                   else if (typeStr.includes("роторенпакет")) masterData.small_rotors.push(n);
+                   else masterData.small_others.push(n);
                 }
             });
 
-            // Рендираме графиката
-            try {
-                mermaid.render('prodTree', graphDef, function(svgCode) {
-                    container.innerHTML = svgCode;
-                });
-            } catch (err) {
-                console.error("Грешка при чертане:", err);
-                container.innerHTML = '<p style="color: #ef4444;">Грешка при генериране на графиката.</p>';
-            }
+            // Подаваме изчисленията към твоя UI рендър
+            drawDashboard(JSON.stringify({ nodes: masterData, connections: connections }));
+
+        } catch (err) {
+            document.getElementById('error-box').innerText = "Грешка при комуникация със Supabase: " + err.message;
         }
+    }
+
+    function toggleTooltip(event, nodeId) {
+      if (event) event.stopPropagation();
+      const el = document.getElementById('tooltip_' + nodeId);
+      if (el) {
+        const isHidden = el.style.display === 'none' || el.style.display === '';
+        document.querySelectorAll('.vsm-tooltip').forEach(t => t.style.display = 'none');
+        el.style.display = isHidden ? 'block' : 'none';
+      }
+    }
+
+    function toggleHarmony(nodeId) {
+      const histEl = document.getElementById('hist_' + nodeId);
+      const toggleEl = document.getElementById('toggle_' + nodeId);
+      if (histEl && toggleEl) {
+        const isHidden = histEl.classList.contains('hidden-history');
+        if (isHidden) {
+          histEl.classList.remove('hidden-history');
+          toggleEl.innerText = '▶ ';
+        } else {
+          histEl.classList.add('hidden-history');
+          toggleEl.innerText = '◀ ';
+        }
+        setTimeout(() => drawArrows(), 50);
+      }
+    }
+
+    document.addEventListener('click', function() {
+      document.querySelectorAll('.vsm-tooltip').forEach(t => t.style.display = 'none');
+    });
+
+    function drawDashboard(jsonString) {
+      if (!jsonString) return;
+      const data = JSON.parse(jsonString);
+      if (data.error) { document.getElementById('error-box').innerText = data.error; return; }
+
+      document.getElementById('loading').style.display = 'none';
+      globalConnections = data.connections || [];
+
+      const allNodesMap = {};
+      if (data.nodes) {
+        Object.values(data.nodes).forEach(bucket => {
+          if(Array.isArray(bucket)) bucket.forEach(n => allNodesMap[n.id] = n);
+        });
+      }
+      
+      const childMap = {}; 
+      const parentMap = {};
+      globalConnections.forEach(c => {
+         if (!childMap[c.to]) childMap[c.to] = [];
+         childMap[c.to].push(c.from);
+         parentMap[c.from] = c.to;
+      });
+
+      const renderFamilyBOMBucket = (nodeArray, containerId) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        if (!nodeArray || !Array.isArray(nodeArray) || nodeArray.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+
+        const plans = {};
+        nodeArray.forEach(n => {
+          if (!plans[n.planId]) plans[n.planId] = [];
+          plans[n.planId].push(n);
+        });
         
-        init();
-    </script>
+        let finalHTML = '';
+
+        for (const [planId, nodes] of Object.entries(plans)) {
+          const nodeIds = new Set(nodes.map(n => n.id));
+          const adj = {};
+          nodes.forEach(n => adj[n.id] = []);
+
+          const localConns = globalConnections.filter(c => nodeIds.has(c.from) && nodeIds.has(c.to));
+          localConns.forEach(c => {
+            adj[c.from].push(c.to);
+            adj[c.to].push(c.from); 
+          });
+          
+          const visited = new Set();
+          const families = [];
+
+          nodes.forEach(n => {
+            if (!visited.has(n.id)) {
+              const familyNodes = [];
+              const queue = [n.id];
+              visited.add(n.id);
+
+              while (queue.length > 0) {
+                const curr = queue.shift();
+                familyNodes.push(nodes.find(x => x.id === curr));
+                adj[curr].forEach(neighbor => {
+                  if (!visited.has(neighbor)) {
+                    visited.add(neighbor);
+                    queue.push(neighbor);
+                  }
+                });
+              }
+              families.push(familyNodes);
+            }
+          });
+          
+          let planHTML = `<div class="plan-group"><div class="plan-label">План: ${planId}</div>`;
+
+          families.forEach(famNodes => {
+            const childrenMap = {};
+            famNodes.forEach(n => childrenMap[n.id] = []);
+            
+            globalConnections.forEach(c => {
+              if (childrenMap.hasOwnProperty(c.from) && childrenMap.hasOwnProperty(c.to)) {
+                childrenMap[c.to].push(c.from); 
+              }
+            });
+
+            const calculatedLevels = {};
+            const visitedForLevel = new Set(); 
+            function getBottomUpLevel(nodeId) {
+              if (calculatedLevels[nodeId]) return calculatedLevels[nodeId];
+              if (visitedForLevel.has(nodeId)) return 1; 
+              visitedForLevel.add(nodeId);
+              if (calculatedLevels[nodeId]) return calculatedLevels[nodeId];
+              
+              const children = childrenMap[nodeId];
+              if (!children || children.length === 0) {
+                calculatedLevels[nodeId] = 1;
+                return 1;
+              }
+              
+              let maxChildLevel = 0;
+              children.forEach(childId => {
+                const childLevel = getBottomUpLevel(childId);
+                if (childLevel > maxChildLevel) maxChildLevel = childLevel;
+              });
+              calculatedLevels[nodeId] = maxChildLevel + 1; 
+              return calculatedLevels[nodeId];
+            }
+
+            const levels = {};
+            famNodes.forEach(fn => {
+              const lvl = getBottomUpLevel(fn.id);
+              if (!levels[lvl]) levels[lvl] = [];
+              levels[lvl].push(fn);
+            });
+            
+            let familyHTML = `<div class="family-row">`;
+            const sortedLevels = Object.keys(levels).map(Number).sort((a, b) => a - b);
+            
+            sortedLevels.forEach(lvl => {
+              let colHTML = `<div class="bom-column">`;
+              
+              levels[lvl].forEach(node => {
+                
+                const isRoot = !parentMap[node.id]; 
+                const rootMarker = isRoot ? '<span style="margin-right:4px; color:#fb923c;" title="Краен Продукт">🔸</span>' : '';
+                
+                const packageIcon = node.isPackaged ? '📦 ' : '';
+                const warehouseQty = node.warehouseQty || 0; 
+                
+                const drawingLinkHTML = (node.drawingUrl && node.drawingUrl.startsWith('http')) 
+                  ? `<a href="${node.drawingUrl}" target="_blank" style="text-decoration:none; margin-left:6px;" title="Отвори чертеж">📐</a>` : '';
+                  
+                let warningHTML = '';
+                if (node.materialWarning) {
+                   warningHTML = `<span class="tooltip-container hide-on-machine"><span class="material-warning-trigger" onclick="toggleTooltip(event, '${node.id}')">⚠️</span><div id="tooltip_${node.id}" class="vsm-tooltip">✗ ${node.materialWarning}</div></span>`;
+                }
+
+                const isCompleted = node.globalState === 'green';
+                
+                let currIdx = -1;
+                if (node.operations && node.operations.length > 0) {
+                    currIdx = node.operations.findIndex(o => o.state !== 'green');
+                    if (currIdx === -1) currIdx = node.operations.length - 1; 
+                }
+
+                const children = childMap[node.id] || [];
+                const isAssemblyWindow = (containerId === 'w-assembly'); 
+                
+                let isNodeReadyStart = false;
+                if (children.length === 0) {
+                    isNodeReadyStart = true; 
+                } else {
+                    isNodeReadyStart = children.every(cId => allNodesMap[cId] && allNodesMap[cId].globalState === 'green');
+                }
+
+                let isStarted = false;
+                if (currIdx > 0) {
+                    isStarted = true;
+                } else if (currIdx === 0 && node.operations.length > 0) {
+                    const currOp = node.operations[0];
+                    if (currOp.completed > 0 || currOp.state === 'blue') {
+                        isStarted = true;
+                    }
+                }
+
+                let isSpilloverTarget = false;
+                if (!isCompleted && !isStarted && !isNodeReadyStart) {
+                    isSpilloverTarget = children.some(cId => {
+                        const ch = allNodesMap[cId];
+                        if (!ch) return false;
+                        if (ch.globalState === 'green') return true; 
+                        
+                        if (ch.operations && ch.operations.length > 0) {
+                            let chCurr = ch.operations.findIndex(o => o.state !== 'green');
+                            if (chCurr === ch.operations.length - 1) {
+                                const chOp = ch.operations[chCurr];
+                                const isChActive = (chOp.completed > 0 || chOp.state === 'blue' || chCurr > 0);
+                                const isChLeaf = !(childMap[ch.id] && childMap[ch.id].length > 0);
+                                
+                                if (isChActive || isChLeaf) return true;
+                            }
+                        }
+                        return false;
+                    });
+                }
+
+                let titleClass = 'title-gray';
+                if (isCompleted) titleClass = 'title-green';
+                else if (node.globalState === 'blue') titleClass = 'title-blue';
+                else if (children.length > 0 && isNodeReadyStart && isAssemblyWindow) titleClass = 'title-yellow'; 
+
+                let opsHTML = '';
+
+                if (isCompleted && node.operations && node.operations.length > 0) {
+                    const allPast = node.operations.map(op => `<span class="op-text op-past">${op.name} | ${op.completed}/${node.planQty}</span>`).join(' <span class="arr">➔</span> ');
+                    opsHTML = `<div class="vsm-ops"><span class="harmony-toggle" id="toggle_${node.id}" onclick="toggleHarmony('${node.id}')">◀ </span><span id="hist_${node.id}" class="hidden-history">${allPast}</span></div>`;
+                } 
+                else if ((isStarted || isNodeReadyStart) && currIdx !== -1) {
+                    const pastOpsArray = [];
+                    for (let m = 0; m < currIdx - 1; m++) {
+                        const op = node.operations[m];
+                        pastOpsArray.push(`<span class="op-text op-past">${op.name} | ${op.completed}/${node.planQty}</span>`);
+                    }
+
+                    let harmonyToggleHTML = '';
+                    if (pastOpsArray.length > 0) {
+                        harmonyToggleHTML = `<span class="harmony-toggle" id="toggle_${node.id}" onclick="toggleHarmony('${node.id}')">◀ </span>`;
+                    }
+
+                    let historyContainerHTML = pastOpsArray.length > 0 
+                        ? `<span id="hist_${node.id}" class="hidden-history">${pastOpsArray.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>` 
+                        : '';
+
+                    let directPastHTML = '';
+                    if (currIdx > 0) {
+                        const prevOp = node.operations[currIdx - 1];
+                        directPastHTML = `<span class="op-text op-past" id="op_${node.id}_${currIdx-1}">${prevOp.name} | ${prevOp.completed}/${node.planQty}</span> <span class="arr">➔</span> `;
+                    }
+                    
+                    const currOp = node.operations[currIdx];
+                    const isOpActive = (currOp.completed > 0 || currOp.state === 'blue');
+                    const focusClass = isOpActive ? 'active' : 'waiting'; 
+                    let focusHTML = `<span class="op-text op-focus ${focusClass}" id="op_${node.id}_${currIdx}">${currOp.name} | ${currOp.completed}/${node.planQty}</span>`;
+                    
+                    let futureHTML = '';
+                    if (currIdx < node.operations.length - 1) {
+                        const nextOp = node.operations[currIdx + 1];
+                        futureHTML = ` <span class="arr">➔</span> <span class="op-text op-future" id="op_${node.id}_${currIdx+1}">${nextOp.name} | 0/${node.planQty}</span>`;
+                    }
+                    
+                    opsHTML = `<div class="vsm-ops">${harmonyToggleHTML}${historyContainerHTML}${directPastHTML}${focusHTML}${futureHTML}</div>`;
+                } 
+                else if (isSpilloverTarget && currIdx !== -1) {
+                    const currOp = node.operations[currIdx];
+                    opsHTML = `<div class="vsm-ops"><span class="op-text op-future" id="op_${node.id}_${currIdx}">${currOp.name} | 0/${node.planQty}</span></div>`;
+                }
+                
+                colHTML += `
+                  <div class="vsm-node" id="card_${node.id}">
+                    <div class="vsm-header">
+                      <span class="vsm-title ${titleClass}">${rootMarker}${packageIcon}${node.code}${drawingLinkHTML}</span>
+                      <span class="vsm-qty">| ${warehouseQty}/${node.planQty}</span>
+                      ${warningHTML}
+                    </div>
+                    ${opsHTML !== '' ? opsHTML : ''}
+                  </div>
+                `;
+              });
+              colHTML += `</div>`;
+              familyHTML += colHTML;
+            });
+            familyHTML += `</div>`;
+            planHTML += familyHTML;
+          });
+          planHTML += `</div>`;
+          finalHTML += planHTML;
+        }
+        container.innerHTML = finalHTML;
+      };
+
+      renderFamilyBOMBucket(data.nodes.tiela || [], 'w-tiela');
+      renderFamilyBOMBucket(data.nodes.predni || [], 'w-predni');
+      renderFamilyBOMBucket(data.nodes.zadni || [], 'w-zadni');
+      renderFamilyBOMBucket(data.nodes.mpr || [], 'w-mpr');
+      
+      renderFamilyBOMBucket(data.nodes.rotors_var11 || data.nodes.var11 || [], 'w-var11');
+      renderFamilyBOMBucket(data.nodes.rotors_var25 || data.nodes.var25 || [], 'w-var25');
+      renderFamilyBOMBucket(data.nodes.bearings || [], 'w-bearings');
+      
+      renderFamilyBOMBucket(data.nodes.small_pins || [], 'w-small-pins');
+      renderFamilyBOMBucket(data.nodes.small_studs || [], 'w-small-studs');
+      renderFamilyBOMBucket(data.nodes.small_rotors || [], 'w-small-rotors');
+      renderFamilyBOMBucket(data.nodes.small_others || [], 'w-small-others');
+      
+      renderFamilyBOMBucket(data.nodes.statori || [], 'w-statori');
+      renderFamilyBOMBucket(data.nodes.assembly || [], 'w-assembly');
+
+      const othersContainer = document.getElementById('w-small-others');
+      if (othersContainer && othersContainer.innerHTML.trim() === '') {
+          const parentCol = othersContainer.closest('.col-lane');
+          if(parentCol) parentCol.style.display = 'none';
+      }
+
+      setTimeout(() => {
+        drawArrows();
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 100);
+      }, 800);
+    }
+
+    function drawArrows() {
+      const svg = document.getElementById('svg-overlay');
+      if (!svg) return;
+      
+      svg.style.height = document.documentElement.scrollHeight + "px";
+      svg.style.width = document.documentElement.scrollWidth + "px";
+      
+      let html = `<defs><marker id="arrow" viewBox="0 0 14 14" refX="10" refY="7" markerWidth="5" markerHeight="5" orient="auto"><path d="M 0 0 L 14 7 L 0 14 z" fill="#475569" /></marker></defs>`;
+      
+      globalConnections.forEach(conn => {
+        const cardChild = document.getElementById(`card_${conn.from}`);
+        const cardParent = document.getElementById(`card_${conn.to}`);
+        if (!cardChild || !cardParent) return;
+        
+        if (cardChild && cardParent) {
+          const winChild = cardChild.closest('.lane') || cardChild.closest('.col-lane') || cardChild.closest('.window-body');
+          const winParent = cardParent.closest('.lane') || cardParent.closest('.col-lane') || cardParent.closest('.window-body');
+          
+          if (winChild !== winParent) return;
+
+          const sourceBadges = cardChild.querySelectorAll('.op-text');
+          let sourceEl = null;
+          if (sourceBadges.length > 0) {
+              for (let s = sourceBadges.length - 1; s >= 0; s--) {
+                  if (sourceBadges[s].offsetParent !== null) { sourceEl = sourceBadges[s]; break; }
+              }
+          }
+          if (!sourceEl) sourceEl = cardChild.querySelector('.vsm-header');
+          
+          const targetBadges = cardParent.querySelectorAll('.op-text');
+          let targetEl = null;
+          if (targetBadges.length > 0) {
+              for (let t = 0; t < targetBadges.length; t++) {
+                  if (targetBadges[t].offsetParent !== null) { targetEl = targetBadges[t]; break; }
+              }
+          }
+          if (!targetEl) targetEl = cardParent.querySelector('.vsm-header');
+
+          const rs = sourceEl.getBoundingClientRect();
+          const rt = targetEl.getBoundingClientRect();
+
+          const startX = rs.right + window.scrollX;
+          const startY = rs.top + window.scrollY + (rs.height / 2);
+          const endX = rt.left - 4 + window.scrollX;
+          const endY = rt.top + window.scrollY + (rt.height / 2);
+          const cpX = startX + (endX - startX) * 0.4;
+          
+          html += `<path d="M ${startX} ${startY} C ${cpX} ${startY}, ${cpX} ${endY}, ${endX} ${endY}" fill="none" stroke="#475569" stroke-width="2" stroke-dasharray="3,3" marker-end="url(#arrow)" />`;
+        }
+      });
+
+      svg.innerHTML = html;
+    }
+
+    window.addEventListener('resize', () => requestAnimationFrame(drawArrows));
+  </script>
 </body>
 </html>
