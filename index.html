@@ -225,11 +225,23 @@
             let partType = row.part_type ? String(row.part_type) : "";
             let typeStr = (partType + " " + code).toLowerCase().replace(/[\s\.\-\_]+/g, '');
             
-            if (code.startsWith("575-")) {
+            // 1. Проверяваме дали в Номенклатурата пише "резолвер"
+            let isResolverByName = partType.toLowerCase().includes("резолвер");
+            
+            // 2. Проверяваме дали ИМА родител (Дали е в колона ID Компонент за друг детайл? Ако да - значи не е краен)
+            let hasParent = (row.parent_code && row.level > 1);
+            
+            // 3. Проверяваме дали ИМА деца (Дали е в колона ID Родител за други детайли?)
+            let hasChildren = nodesData.some(r => r.parent_code === row.code && r.plan_id === row.plan_id);
+
+            // ФИНАЛНА ЛОГИКА: Резолвер е само този, който се казва така, НЯМА родител И ИМА деца
+            if (isResolverByName && !hasParent && hasChildren) {
                 masterData.assembly.push(n);
-            } else if (typeStr.includes("тяло")) masterData.tiela.push(n);
-            else if (typeStr.includes("преден")) masterData.predni.push(n);
-            else if (typeStr.includes("заден")) masterData.zadni.push(n);
+            } 
+            // Всичко останало се сортира нормално
+            else if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
+            else if (typeStr.includes("преден") || typeStr.includes("предни")) masterData.predni.push(n);
+            else if (typeStr.includes("заден") || typeStr.includes("задни")) masterData.zadni.push(n);
             else if (typeStr.includes("мпр")) masterData.mpr.push(n);
             else if (typeStr.includes("статор") || typeStr.includes("трансформатор")) masterData.statori.push(n);
             else if (typeStr.includes("ротор") && typeStr.includes("11")) masterData.var11.push(n);
