@@ -228,24 +228,30 @@
                 if (isTopParent && hasChildren) {
                     masterData.assembly.push(n);
                 } else {
-                    let typeStr = ((row.part_type || '') + ' ' + row.code).toLowerCase().replace(/[\s\.\-\_]+/g, '');
-                    
-                    if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
-                    else if (typeStr.includes("преден") || typeStr.includes("предни")) masterData.predni.push(n);
-                    else if (typeStr.includes("заден") || typeStr.includes("задни")) masterData.zadni.push(n);
-                    else if (typeStr.includes("мпр")) masterData.mpr.push(n);
-                    else if (typeStr.includes("статор") || typeStr.includes("тороид") || typeStr.includes("трансформатор")) masterData.statori.push(n);
-                    else if (typeStr.includes("ротор") && typeStr.includes("11")) masterData.var11.push(n);
-                    else if (typeStr.includes("ротор") && typeStr.includes("25")) masterData.var25.push(n);
-                    else if (typeStr.includes("лагер")) masterData.bearings.push(n);
-                    else {
-                        if (typeStr.includes("щифт")) masterData.small_pins.push(n);
-                        else if (typeStr.includes("шпилк")) masterData.small_studs.push(n);
-                        else if (typeStr.includes("роторенпакет")) masterData.small_rotors.push(n);
-                        else masterData.small_others.push(n);
-                    }
+                    // Обединяваме Типа от Номенклатурата с Кода
+                let typeStr = ((row.part_type || '') + ' ' + row.code).toLowerCase().replace(/[\s\.\-\_]+/g, '');
+                
+                // 1. АБСОЛЮТНА ГАРАНЦИЯ: Крайният продукт (Резолверите)
+                // Проверяваме дали кодът започва с "575-" (ти каза, че това са резолверите)
+                if (row.code.startsWith("575-")) {
+                    masterData.assembly.push(n);
+                } 
+                // 2. Сортиране по Тип (директно от твоята Номенклатура)
+                else if (typeStr.includes("тяло")) masterData.tiela.push(n);
+                else if (typeStr.includes("преден") || typeStr.includes("преденкапак")) masterData.predni.push(n);
+                else if (typeStr.includes("заден") || typeStr.includes("заденкапак")) masterData.zadni.push(n);
+                else if (typeStr.includes("мпр")) masterData.mpr.push(n); // Тук ще отиде "тефлонова макара"
+                else if (typeStr.includes("статор") || typeStr.includes("трансформатор")) masterData.statori.push(n);
+                else if (typeStr.includes("ротор") && typeStr.includes("11")) masterData.var11.push(n);
+                else if (typeStr.includes("ротор") && typeStr.includes("25")) masterData.var25.push(n);
+                else if (typeStr.includes("лагер")) masterData.bearings.push(n);
+                else {
+                    if (typeStr.includes("щифт")) masterData.small_pins.push(n);
+                    else if (typeStr.includes("шпилк")) masterData.small_studs.push(n);
+                    else if (typeStr.includes("роторенпакет")) masterData.small_rotors.push(n);
+                    else masterData.small_others.push(n);
                 }
-            }); // <-- ТАЗИ СКОБА Е ВАЖНА, ТЯ ЗАТВАРЯ nodesData.forEach
+            }); 
 
             drawDashboard(JSON.stringify({ nodes: masterData, connections: connections }));
 
