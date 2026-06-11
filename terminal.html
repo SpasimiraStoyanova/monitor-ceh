@@ -78,7 +78,7 @@
       </ul>
     </div>
 
-   <script>
+  <script>
       const client = supabase.createClient(
         'https://zdythzcgcjxwbxufunuh.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
@@ -159,16 +159,17 @@
         document.getElementById('loadingMsg').style.display = 'block';
         
         try {
-            const [bomRes, routesRes, reportsRes, masterRes] = await Promise.all([
+            const [bomRes, routesRes, reportsRes, skladRes] = await Promise.all([
                 client.from('общ_план_материали').select('*'),
                 client.from('marshruti').select('*'),
                 client.from('otcheti').select('*').eq('Статус', 'Отчетено'),
-                client.from('монитор_мастър_данни').select('*')
+                client.from('Склад').select('*') 
             ]);
 
             if (bomRes.error) throw bomRes.error;
             if (routesRes.error) throw routesRes.error;
             if (reportsRes.error) throw reportsRes.error;
+            if (skladRes.error) console.warn("Проблем с таблица Склад:", skladRes.error.message);
 
             let completedOps = {}; 
             reportsRes.data.forEach(r => {
@@ -177,10 +178,10 @@
                 completedOps[key] += parseFloat(r['Количество']);
             });
 
-            let masterData = masterRes.data || [];
-            let getMasterReady = (code) => {
-                let md = masterData.find(m => String(m.code).trim() === code);
-                return md ? parseFloat(md.ready_qty) : 0;
+            let skladData = skladRes.data || [];
+            let getSkladQty = (code) => {
+                let item = skladData.find(s => String(s['ID Детайл']).trim() === code);
+                return item ? (parseFloat(item['Наличност']) || parseFloat(item['Количество']) || 0) : 0;
             };
 
             let routesByDetail = {};
@@ -205,7 +206,8 @@
                 let bomNodes = planGroups[planId];
                 let getChildren = (parentCode) => bomNodes.filter(n => String(n.текущ_родител).trim() === parentCode);
                 
-                bomNodes.forEach(node => {
+                // ТУК Е ФИКСЪТ: Добавяме nodeIndex, за да различаваме еднакви детайли
+                bomNodes.forEach((node, nodeIndex) => {
                     let code = String(node.детайл_код).trim();
                     let planQty = parseFloat(node.общо_необходимо_количество) || 0;
                     
@@ -217,7 +219,6 @@
                         let opKey = code + '_' + opName;
                         let doneQty = completedOps[opKey] || 0;
                         
-                        // Ако сме си изпълнили плана за тази стъпка, скриваме я
                         if(doneQty >= planQty) return; 
                         
                         let maxAllowed = 0;
@@ -246,7 +247,7 @@
                                         let cOpKey = cCode + '_' + String(lastRoute['Име на операция']).trim();
                                         cDone = completedOps[cOpKey] || 0;
                                     } else {
-                                        cDone = getMasterReady(cCode);
+                                        cDone = getSkladQty(cCode);
                                     }
                                     
                                     if (cPlan > 0) {
@@ -276,9 +277,9 @@
                         if (defaultInput <= 0 && !hasLimit) defaultInput = 1; 
                         if (defaultInput <= 0 && isBlocked) defaultInput = 0;
 
-                        let safeId = (planId + '_' + code + '_' + idx).replace(/[^a-zA-Z0-9а-яА-Я_]/g, '_');
+                        // ТУК Е ФИКСЪТ: Инжектираме nodeIndex в ID-то, за да е 100% уникално!
+                        let safeId = (planId + '_' + code + '_n' + nodeIndex + '_op' + idx).replace(/[^a-zA-Z0-9а-яА-Я_]/g, '_');
 
-                        // ВЕЧЕ ВИНАГИ ДОБАВЯМЕ ЗАДАЧАТА (дори да е блокирана)
                         globalTasks.push({
                             id: safeId,
                             plan_id: planId,
@@ -338,7 +339,7 @@
           var inputMaxHtml = t.hasLimit ? `max="${t.maxAllowed}"` : '';
 
           if (t.isBlocked) {
-              bomBadgeHtml = `<div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 8px; margin-top: 8px; font-size: 13px; color: #991b1b; font-weight: 600;">🚫 Изчаква предходни детайли или операции</div>`;
+              bomBadgeHtml = `<div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 8px; margin-top: 8px; font-size: 13px; color: #991b1b; font-weight: 600;">🚫 Изчаква предходни детайли или материали от Склад</div>`;
               actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:not-allowed;">🛑 БЛОКИРАНА ЗАДАЧА</button>`;
           } else if (t.hasLimit) {
               bomBadgeHtml = `<div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 8px; margin-top: 8px; font-size: 13px; color: #166534; font-weight: 600;">✅ Налични за: ${t.maxAllowed} бр.</div>`;
@@ -423,7 +424,7 @@
             
             try {
                 const { error } = await client.from('otcheti').insert([{
-                    "ID Детайл": taskData.name, 
+                    "ID Детайл": taskData.name,
                     "Оператор": currentOperator,
                     "Количество": val,
                     "Операция": taskData.op,
