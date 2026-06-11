@@ -181,7 +181,7 @@
             let skladData = skladRes.data || [];
             let getSkladQty = (code) => {
                 let item = skladData.find(s => String(s['ID Детайл']).trim() === code);
-                return item ? (parseFloat(item['Наличност']) || parseFloat(item['Количество']) || 0) : 0;
+                return item ? (parseFloat(item['Остатък']) || 0) : 0;
             };
 
             let routesByDetail = {};
