@@ -163,13 +163,13 @@
                 client.from('общ_план_материали').select('*'),
                 client.from('marshruti').select('*'),
                 client.from('otcheti').select('*').eq('Статус', 'Отчетено'),
-                client.from('Склад').select('*') 
+                client.from('sklad').select('*') 
             ]);
 
             if (bomRes.error) throw bomRes.error;
             if (routesRes.error) throw routesRes.error;
             if (reportsRes.error) throw reportsRes.error;
-            if (skladRes.error) console.warn("Проблем с таблица Склад:", skladRes.error.message);
+            if (skladRes.error) console.warn("Проблем с таблица sklad:", skladRes.error.message);
 
             let completedOps = {}; 
             reportsRes.data.forEach(r => {
