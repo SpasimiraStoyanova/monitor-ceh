@@ -217,6 +217,7 @@
                         let opKey = code + '_' + opName;
                         let doneQty = completedOps[opKey] || 0;
                         
+                        // Ако сме си изпълнили плана за тази стъпка, скриваме я
                         if(doneQty >= planQty) return; 
                         
                         let maxAllowed = 0;
@@ -254,42 +255,46 @@
                                         if (possibleSets < minSets) minSets = possibleSets;
                                     }
                                 });
+                                if (minSets === Infinity) minSets = 0;
                                 maxAllowed = minSets - doneQty;
                             }
                         }
                         
-                        if (maxAllowed > 0 || !hasLimit) {
-                            let machineName = route['Машина'] || '';
-                            
-                            if (currentMachine && currentMachine.trim() !== "") {
-                                if (!machineName.toLowerCase().includes(currentMachine.toLowerCase())) {
-                                    return; 
-                                }
+                        if (maxAllowed < 0) maxAllowed = 0;
+                        let isBlocked = hasLimit && maxAllowed <= 0;
+                        
+                        let machineName = route['Машина'] || '';
+                        
+                        if (currentMachine && currentMachine.trim() !== "") {
+                            if (!machineName.toLowerCase().includes(currentMachine.toLowerCase())) {
+                                return; 
                             }
-
-                            let defaultInput = (planQty - doneQty > 0) ? (planQty - doneQty) : 0;
-                            if (hasLimit && defaultInput > maxAllowed) defaultInput = maxAllowed;
-                            if (defaultInput === 0 && !hasLimit) defaultInput = 1; 
-
-                            // ЗАЩИТА: Генерираме "безопасно" ID без интервали и специални символи за HTML-а
-                            let safeId = (planId + '_' + code + '_' + idx).replace(/[^a-zA-Z0-9а-яА-Я_]/g, '_');
-
-                            globalTasks.push({
-                                id: safeId,
-                                plan_id: planId,
-                                name: code, // Запазваме оригиналното име за базата!
-                                op: opName,
-                                next_op: idx < routes.length - 1 ? String(routes[idx+1]['Име на операция']).trim() : "Готово",
-                                machine: machineName,
-                                drawing_link: route['Линк към чертеж'],
-                                sop_link: route['Линк към СОП'],
-                                desc: route['Описание'],
-                                type: idx === routes.length - 1 ? "ЗЕЛЕНА" : "СИНЯ",
-                                defaultQty: defaultInput,
-                                maxAllowed: maxAllowed,
-                                hasLimit: hasLimit
-                            });
                         }
+
+                        let defaultInput = (planQty - doneQty > 0) ? (planQty - doneQty) : 0;
+                        if (hasLimit && defaultInput > maxAllowed) defaultInput = maxAllowed;
+                        if (defaultInput <= 0 && !hasLimit) defaultInput = 1; 
+                        if (defaultInput <= 0 && isBlocked) defaultInput = 0;
+
+                        let safeId = (planId + '_' + code + '_' + idx).replace(/[^a-zA-Z0-9а-яА-Я_]/g, '_');
+
+                        // ВЕЧЕ ВИНАГИ ДОБАВЯМЕ ЗАДАЧАТА (дори да е блокирана)
+                        globalTasks.push({
+                            id: safeId,
+                            plan_id: planId,
+                            name: code,
+                            op: opName,
+                            next_op: idx < routes.length - 1 ? String(routes[idx+1]['Име на операция']).trim() : "Готово",
+                            machine: machineName,
+                            drawing_link: route['Линк към чертеж'],
+                            sop_link: route['Линк към СОП'],
+                            desc: route['Описание'],
+                            type: idx === routes.length - 1 ? "ЗЕЛЕНА" : "СИНЯ",
+                            defaultQty: defaultInput,
+                            maxAllowed: maxAllowed,
+                            hasLimit: hasLimit,
+                            isBlocked: isBlocked
+                        });
                     });
                 });
             }
@@ -328,11 +333,20 @@
 
           var planBadge = `<div style="font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">ПЛАН: ${t.plan_id} | МАШИНА: ${t.machine || 'Обща'}</div>`;
 
-          var bomBadgeHtml = t.hasLimit 
-              ? `<div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 8px; margin-top: 8px; font-size: 13px; color: #166534; font-weight: 600;">✅ Налични за: ${t.maxAllowed} бр.</div>`
-              : `<div style="background-color: #e0e7ff; border-left: 4px solid #6366f1; padding: 8px; margin-top: 8px; font-size: 13px; color: #3730a3; font-weight: 600;">⚡ Първа стъпка (свободно производство)</div>`;
-              
+          var bomBadgeHtml = '';
+          var actionButtonHtml = '';
           var inputMaxHtml = t.hasLimit ? `max="${t.maxAllowed}"` : '';
+
+          if (t.isBlocked) {
+              bomBadgeHtml = `<div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 8px; margin-top: 8px; font-size: 13px; color: #991b1b; font-weight: 600;">🚫 Изчаква предходни детайли или операции</div>`;
+              actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:not-allowed;">🛑 БЛОКИРАНА ЗАДАЧА</button>`;
+          } else if (t.hasLimit) {
+              bomBadgeHtml = `<div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 8px; margin-top: 8px; font-size: 13px; color: #166534; font-weight: 600;">✅ Налични за: ${t.maxAllowed} бр.</div>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:pointer;">🚀 ПОЕМИ ЗАДАЧА</button>`;
+          } else {
+              bomBadgeHtml = `<div style="background-color: #e0e7ff; border-left: 4px solid #6366f1; padding: 8px; margin-top: 8px; font-size: 13px; color: #3730a3; font-weight: 600;">⚡ Първа стъпка (свободно производство)</div>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:pointer;">🚀 ПОЕМИ ЗАДАЧА</button>`;
+          }
 
           html += `
             <div class="card ${cardClass}" id="card_${t.id}">
@@ -352,7 +366,7 @@
               </div>
               
               <div id="free_state_${t.id}" style="display: block;">
-                <button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:pointer;">🚀 ПОЕМИ ЗАДАЧА</button>
+                ${actionButtonHtml}
               </div>
 
               <div id="focus_state_${t.id}" style="display: none;">
@@ -409,7 +423,7 @@
             
             try {
                 const { error } = await client.from('otcheti').insert([{
-                    "ID Детайл": taskData.name, // Тук отива оригиналното име (МПР2 Вар. 25)
+                    "ID Детайл": taskData.name, 
                     "Оператор": currentOperator,
                     "Количество": val,
                     "Операция": taskData.op,
