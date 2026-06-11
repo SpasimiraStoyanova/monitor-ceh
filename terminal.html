@@ -159,7 +159,6 @@
         document.getElementById('loadingMsg').style.display = 'block';
         
         try {
-            // Теглим всичко едновременно (включително master_data за наличностите на купените материали)
             const [bomRes, routesRes, reportsRes, masterRes] = await Promise.all([
                 client.from('общ_план_материали').select('*'),
                 client.from('marshruti').select('*'),
@@ -218,27 +217,22 @@
                         let opKey = code + '_' + opName;
                         let doneQty = completedOps[opKey] || 0;
                         
-                        // Показваме задачата САМО ако не сме изпълнили плана за тази стъпка
                         if(doneQty >= planQty) return; 
                         
                         let maxAllowed = 0;
                         let hasLimit = true;
 
                         if (idx > 0) {
-                            // ОПЕРАЦИЯ 20+: Лимитът е това, което сме направили на предната операция
                             let prevRoute = routes[idx - 1];
                             let prevOpKey = code + '_' + String(prevRoute['Име на операция']).trim();
                             let prevDoneQty = completedOps[prevOpKey] || 0;
                             maxAllowed = prevDoneQty - doneQty;
                         } else {
-                            // ОПЕРАЦИЯ 10: Гледаме има ли деца
                             let children = getChildren(code);
                             if (children.length === 0) {
-                                // ПЪРВА СТЪПКА В ЦЕХА: Няма лимит!
                                 hasLimit = false;
                                 maxAllowed = Infinity;
                             } else {
-                                // СГЛОБЯВАНЕ: Лимитът зависи от наличните части
                                 let minSets = Infinity;
                                 children.forEach(child => {
                                     let cCode = String(child.детайл_код).trim();
@@ -251,7 +245,6 @@
                                         let cOpKey = cCode + '_' + String(lastRoute['Име на операция']).trim();
                                         cDone = completedOps[cOpKey] || 0;
                                     } else {
-                                        // Купен материал - четем наличността от склада
                                         cDone = getMasterReady(cCode);
                                     }
                                     
@@ -265,7 +258,6 @@
                             }
                         }
                         
-                        // Ако имаме материали (или ако няма лимит), създаваме задачата
                         if (maxAllowed > 0 || !hasLimit) {
                             let machineName = route['Машина'] || '';
                             
@@ -275,15 +267,17 @@
                                 }
                             }
 
-                            // Колко да предложим в полето (оставащото по план или максимума)
                             let defaultInput = (planQty - doneQty > 0) ? (planQty - doneQty) : 0;
                             if (hasLimit && defaultInput > maxAllowed) defaultInput = maxAllowed;
-                            if (defaultInput === 0 && !hasLimit) defaultInput = 1; // За да не е 0 кутийката
+                            if (defaultInput === 0 && !hasLimit) defaultInput = 1; 
+
+                            // ЗАЩИТА: Генерираме "безопасно" ID без интервали и специални символи за HTML-а
+                            let safeId = (planId + '_' + code + '_' + idx).replace(/[^a-zA-Z0-9а-яА-Я_]/g, '_');
 
                             globalTasks.push({
-                                id: planId + '_' + code + '_' + idx,
+                                id: safeId,
                                 plan_id: planId,
-                                name: code,
+                                name: code, // Запазваме оригиналното име за базата!
                                 op: opName,
                                 next_op: idx < routes.length - 1 ? String(routes[idx+1]['Име на операция']).trim() : "Готово",
                                 machine: machineName,
@@ -415,7 +409,7 @@
             
             try {
                 const { error } = await client.from('otcheti').insert([{
-                    "ID Детайл": taskData.name,
+                    "ID Детайл": taskData.name, // Тук отива оригиналното име (МПР2 Вар. 25)
                     "Оператор": currentOperator,
                     "Количество": val,
                     "Операция": taskData.op,
