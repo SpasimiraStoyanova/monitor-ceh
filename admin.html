@@ -252,7 +252,7 @@
           return;
         }
 
-        items.forEach((item) => {
+       items.forEach((item) => {
           const row = document.createElement('tr');
           const trueIndex = globalRows.indexOf(item); // 🔑 ТУК Е МАГИЯТА: Намираме истинския номер от главната база!
 
@@ -280,15 +280,6 @@
           tdActions.style.textAlign = 'center';
           tdActions.innerHTML = `<button class="action-btn btn-edit" onclick="openEditModal(${trueIndex})" title="Редактирай">✏️</button>
                                  <button class="action-btn btn-delete" onclick="deleteItem(${trueIndex})" title="Изтрий">🗑️</button>`;
-          row.appendChild(tdActions);
-          tbody.appendChild(row);
-        });
-        }
-
-          const tdActions = document.createElement('td');
-          tdActions.style.textAlign = 'center';
-          tdActions.innerHTML = `<button class="action-btn btn-edit" onclick="openEditModal(${index})" title="Редактирай">✏️</button>
-                                 <button class="action-btn btn-delete" onclick="deleteItem(${index})" title="Изтрий">🗑️</button>`;
           row.appendChild(tdActions);
           tbody.appendChild(row);
         });
