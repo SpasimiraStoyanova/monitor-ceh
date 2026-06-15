@@ -236,10 +236,13 @@
                 else if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
                 else if (typeStr.includes("преден") || typeStr.includes("предни") || typeStr.includes("преденкапак")) masterData.predni.push(n);
                 else if (typeStr.includes("заден") || typeStr.includes("задни") || typeStr.includes("заденкапак")) masterData.zadni.push(n);
-                else if (typeStr.includes("мпр")) masterData.mpr.push(n);
+               else if (typeStr.includes("мпр")) masterData.mpr.push(n);
+                
+                // НОВО: Хващаме ВСИЧКО, което е от тип "Пакет", и го слагаме в колонката
+                else if (typeStr.includes("пакет")) masterData.small_rotors.push(n);
+                
+                // Чак след това разпределяме големите статори и ротори
                 else if (typeStr.includes("статор") || typeStr.includes("трансформатор")) masterData.statori.push(n);
-                // НОВО: Първо търсим "Роторен пакет", за да не го грабне проверката за обикновен "Ротор"
-                else if (typeStr.includes("роторенпакет")) masterData.small_rotors.push(n);
                 else if (typeStr.includes("ротор") && typeStr.includes("11")) masterData.var11.push(n);
                 else if (typeStr.includes("ротор") && typeStr.includes("25")) masterData.var25.push(n);
                 else if (typeStr.includes("лагер")) masterData.bearings.push(n);
