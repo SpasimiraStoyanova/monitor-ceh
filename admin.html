@@ -252,11 +252,12 @@
           return;
         }
 
-        items.forEach((item, index) => {
+        items.forEach((item) => {
           const row = document.createElement('tr');
-          
+          const trueIndex = globalRows.indexOf(item); // 🔑 ТУК Е МАГИЯТА: Намираме истинския номер от главната база!
+
           config.fields.forEach(f => {
-            if (f.hideOnAdd) return; // Скриваме ID-то и от редовете, за да няма разместване
+            if (f.hideOnAdd) return; 
             const td = document.createElement('td');
             let val = item[f.name] !== undefined && item[f.name] !== null ? item[f.name] : '';
             if (currentTab === 'sklad' && f.name === 'Остатък') {
@@ -274,6 +275,14 @@
             td.innerText = val;
             row.appendChild(td);
           });
+
+          const tdActions = document.createElement('td');
+          tdActions.style.textAlign = 'center';
+          tdActions.innerHTML = `<button class="action-btn btn-edit" onclick="openEditModal(${trueIndex})" title="Редактирай">✏️</button>
+                                 <button class="action-btn btn-delete" onclick="deleteItem(${trueIndex})" title="Изтрий">🗑️</button>`;
+          row.appendChild(tdActions);
+          tbody.appendChild(row);
+        });
 
           const tdActions = document.createElement('td');
           tdActions.style.textAlign = 'center';
