@@ -191,6 +191,13 @@
 
               let checkboxHtml = '<div style="text-align:left; margin-top:15px; max-height: 300px; overflow-y: auto;">';
               let currentSelections = currentMachine ? currentMachine.split(',') : [];
+            // --- НОВИ БУТОНИ: ВСИЧКИ / ИЗЧИСТИ ---
+              checkboxHtml += `
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <button type="button" onclick="document.querySelectorAll('.machine-cb').forEach(cb => cb.checked = true)" style="flex:1; padding:10px; background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; border-radius:6px; font-weight:bold; cursor:pointer;">☑️ Всички</button>
+                    <button type="button" onclick="document.querySelectorAll('.machine-cb').forEach(cb => cb.checked = false)" style="flex:1; padding:10px; background:#fee2e2; color:#b91c1c; border:1px solid #fecaca; border-radius:6px; font-weight:bold; cursor:pointer;">☐ Изчисти</button>
+                </div>
+              `;
               
               uniqueMachines.forEach(m => {
                   let isChecked = currentSelections.includes(m) ? 'checked' : '';
