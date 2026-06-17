@@ -179,7 +179,7 @@
 
     let globalConnections = [];
     
-    // БЕЗОПАСНИ ID-та за детайлите със специални символи
+    // БЕЗОПАСНИ ID-та за детайлите със специални символи (" , /)
     let domIdMap = {};
     let domIdCounter = 0;
     function getDomId(realId) {
@@ -477,8 +477,31 @@
                 let opsHTML = '';
                 let titleClass = 'title-gray';
 
-                let len = node.operations.length;
-                if (len > 0) {
+                // --- ЛОГИКА ЗА СКРИВАНЕ НА ОПЕРАЦИИ (РОДИТЕЛИ, КОИТО ЧАКАТ) ---
+                let children = childMap[node.id] || [];
+                let allChildrenDone = true;
+                
+                if (children.length > 0) {
+                    allChildrenDone = children.every(cId => {
+                        let chNode = allNodesMap[cId];
+                        if(!chNode || !chNode.operations) return false;
+                        return chNode.operations.findIndex(o => o.completed < chNode.planQty) === -1;
+                    });
+                }
+
+                let hasStarted = false;
+                if (node.operations && node.operations.length > 0) {
+                    hasStarted = node.operations.some(o => o.completed > 0);
+                }
+
+                // АКО ИМА ДЕЦА, НО ТЕ НЕ СА ГОТОВИ И РОДИТЕЛЯТ НЕ Е ЗАПОЧНАТ -> СКРИВАМЕ ОПЕРАЦИИТЕ
+                let shouldShowOps = true;
+                if (children.length > 0 && !hasStarted && !allChildrenDone) {
+                    shouldShowOps = false;
+                }
+
+                if (shouldShowOps && node.operations.length > 0) {
+                    let len = node.operations.length;
                     let currIdx = node.operations.findIndex(o => o.completed < node.planQty);
 
                     const formatPast = (op) => `<span class="op-text op-past">${op.name} | ${op.completed}/${node.planQty}</span>`;
@@ -492,56 +515,47 @@
                     let html = '';
 
                     if (currIdx === -1) {
-                        // Детайлът е напълно готов
+                        // Детайлът е 100% готов
                         titleClass = 'title-green';
                         let lastIdx = len - 1;
                         
-                        // Събираме миналото до предпоследната операция
                         for(let i=0; i < lastIdx - 1; i++) pastHiddenArr.push(formatPast(node.operations[i]));
                         
                         if(pastHiddenArr.length > 0) {
-                            html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}" title="Минали операции">⋯</span> `;
+                            html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
                         
-                        // Предпоследна (видима)
-                        if(lastIdx > 0) {
-                            html += formatPast(node.operations[lastIdx - 1]) + ' <span class="arr">➔</span> ';
-                        }
+                        if(lastIdx > 0) html += formatPast(node.operations[lastIdx - 1]) + ' <span class="arr">➔</span> ';
                         
-                        // Последна (голяма зелена)
                         html += formatFocusGreen(node.operations[lastIdx]);
                         
                     } else {
-                        // Детайлът се работи или чака
+                        // Детайлът се работи (или е готов за стартиране)
                         let isWorking = node.operations[currIdx].completed > 0 || currIdx > 0;
                         if (isWorking) titleClass = 'title-blue';
 
-                        // 1. Събираме скритото минало
+                        // Минало
                         for(let i=0; i < currIdx - 1; i++) pastHiddenArr.push(formatPast(node.operations[i]));
                         if(pastHiddenArr.length > 0) {
-                            html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}" title="Минали операции">⋯</span> `;
+                            html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
 
-                        // 2. Предходна операция (видима)
-                        if (currIdx > 0) {
-                            html += formatPast(node.operations[currIdx - 1]) + ' <span class="arr">➔</span> ';
-                        }
-
-                        // 3. Текуща операция
+                        // Предходна (Зелена)
+                        if (currIdx > 0) html += formatPast(node.operations[currIdx - 1]) + ' <span class="arr">➔</span> ';
+                        
+                        // Текуща (Голяма Синя или Сива)
                         html += isWorking ? formatFocusBlue(node.operations[currIdx]) : formatFocusGray(node.operations[currIdx]);
+                        
+                        // Следваща (Сива)
+                        if (currIdx < len - 1) html += ' <span class="arr">➔</span> ' + formatFuture(node.operations[currIdx + 1]);
 
-                        // 4. Следваща операция (видима)
-                        if (currIdx < len - 1) {
-                            html += ' <span class="arr">➔</span> ' + formatFuture(node.operations[currIdx + 1]);
-                        }
-
-                        // 5. Събираме скритото бъдеще
+                        // Бъдеще
                         for(let i = currIdx + 2; i < len; i++) futureHiddenArr.push(formatFuture(node.operations[i]));
                         if(futureHiddenArr.length > 0) {
                             html += `<span id="hist_future_${dId}" class="hidden-history"> <span class="arr">➔</span> ${futureHiddenArr.join(' <span class="arr">➔</span> ')}</span>`;
-                            html += ` <span class="harmony-toggle" onclick="toggleHarmony('future_${dId}')" id="btn_future_${dId}" title="Бъдещи операции">⋯</span>`;
+                            html += ` <span class="harmony-toggle" onclick="toggleHarmony('future_${dId}')" id="btn_future_${dId}">⋯</span>`;
                         }
                     }
 
@@ -549,19 +563,11 @@
                 }
                 
                 let isAssemblyWindow = (containerId === 'w-assembly'); 
-                let children = childMap[node.id] || [];
-                if (children.length > 0 && isAssemblyWindow && titleClass !== 'title-green') {
-                    let allChildrenDone = children.every(cId => {
-                        let chNode = allNodesMap[cId];
-                        if(!chNode || !chNode.operations) return false;
-                        return chNode.operations.findIndex(o => o.completed < chNode.planQty) === -1;
-                    });
-                    if (allChildrenDone) {
-                        titleClass = 'title-yellow'; 
-                    }
+                if (children.length > 0 && allChildrenDone && isAssemblyWindow && titleClass !== 'title-green') {
+                    titleClass = 'title-yellow'; 
                 }
 
-                // КАРТИТЕ ВЕЧЕ НИКОГА НЕ СЕ СКРИВАТ
+                // КАРТИТЕ СТОЯТ ВИНАГИ ВИДИМИ, ЗА ДА СЕ ВИЖДА ДЪРВОТО И СТРЕЛКИТЕ
                 colHTML += `
                   <div class="vsm-node" id="card_${dId}">
                     <div class="vsm-header">
