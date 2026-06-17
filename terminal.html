@@ -256,16 +256,20 @@
                   confirmButtonColor: '#2563eb'
               });
 
-              if (selectedMachine !== undefined) {
-                  currentMachine = selectedMachine;
-                  localStorage.setItem('mes_machine', currentMachine);
-                  document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ";
-                  loadTasks();
-              } else if (isInitial) {
-                  currentMachine = "";
-                  localStorage.setItem('mes_machine', currentMachine);
-                  document.getElementById('uiMachineName').innerText = "ВСИЧКИ";
-                  loadTasks();
+             // --- НОВА ЛОГИКА ЗА ФИЛТРИРАНЕ НА НЯКОЛКО МАШИНИ ---
+                        let machineName = route['Машина'] || '';
+                        let shouldShow = true;
+
+                        if (currentMachine && currentMachine.trim() !== "") {
+                            let selectedMachines = currentMachine.split(',').map(m => m.toLowerCase().trim());
+                            let routeMachine = machineName.toLowerCase();
+                            
+                            // Проверка дали машината на операцията присъства в избраните от него
+                            let match = selectedMachines.some(m => routeMachine.includes(m));
+                            if (!match) {
+                                return; // Прескачаме тази задача, ако не е за избраните машини
+                            }
+                        
               }
           } catch (err) {
               console.error(err);
