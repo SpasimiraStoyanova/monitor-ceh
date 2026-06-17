@@ -529,15 +529,15 @@
                         titleClass = 'title-green';
                         let lastIdx = len - 1;
                         
-                        for(let i=0; i < lastIdx - 1; i++) pastHiddenArr.push(formatPast(node.operations[i]));
+                        // Скриваме ВСИЧКИ минали операции зад трите точки (без финалната)
+                        for(let i=0; i < lastIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
                         
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
                         
-                        if(lastIdx > 0) html += formatPast(node.operations[lastIdx - 1]) + ' <span class="arr">➔</span> ';
-                        
+                        // Показваме само последната операция (в голямо зелено)
                         html += formatFocusGreen(node.operations[lastIdx]);
                         
                     } else {
@@ -545,15 +545,13 @@
                         let isWorking = node.operations[currIdx].completed > 0 || currIdx > 0;
                         if (isWorking) titleClass = 'title-blue';
 
-                        // Минало
-                        for(let i=0; i < currIdx - 1; i++) pastHiddenArr.push(formatPast(node.operations[i]));
+                        // Скриваме ВСИЧКИ минали операции зад трите точки (до текущата)
+                        for(let i=0; i < currIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
+                        
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
-
-                        // Предходна (Зелена)
-                        if (currIdx > 0) html += formatPast(node.operations[currIdx - 1]) + ' <span class="arr">➔</span> ';
                         
                         // Текуща (Голяма Синя или Сива)
                         html += isWorking ? formatFocusBlue(node.operations[currIdx]) : formatFocusGray(node.operations[currIdx]);
@@ -561,7 +559,7 @@
                         // Следваща (Сива)
                         if (currIdx < len - 1) html += ' <span class="arr">➔</span> ' + formatFuture(node.operations[currIdx + 1]);
 
-                        // Бъдеще
+                        // Бъдеще (останалите се крият зад трите точки)
                         for(let i = currIdx + 2; i < len; i++) futureHiddenArr.push(formatFuture(node.operations[i]));
                         if(futureHiddenArr.length > 0) {
                             html += `<span id="hist_future_${dId}" class="hidden-history"> <span class="arr">➔</span> ${futureHiddenArr.join(' <span class="arr">➔</span> ')}</span>`;
