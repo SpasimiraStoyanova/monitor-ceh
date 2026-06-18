@@ -256,7 +256,7 @@
                   client.from('bom').select('*'),
                   client.from('marshruti').select('*'),
                   client.from('otcheti').select('*').eq('Статус', 'Отчетено'),
-                  client.from('Номенклатура').select('ID Детайл, Вътрешно име')
+                  client.from('Номенклатура').select('*')
               ]);
 
               if (plansRes.error) throw plansRes.error;
