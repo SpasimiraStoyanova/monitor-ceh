@@ -190,7 +190,8 @@
             { name: 'Количество', type: 'number', def: 1, required: true },
             { name: 'Статус', type: 'select', options: ['Отчетено', 'Брак'], required: true },
             { name: 'Оператор', type: 'text', required: true },
-            { name: 'Дата', type: 'text', def: () => new Date().toISOString(), label: 'Време на отчитане' }
+            { name: 'Време Старт', type: 'text', label: '⌚ СТАРТ', hideOnAdd: true }, 
+            { name: 'Дата', type: 'text', def: () => new Date().toISOString(), label: '🏁 КРАЙ (Отчетено)' }
           ]
         }
       };
@@ -238,10 +239,14 @@
             await loadComputedVirtualWarehouse();
         } else {
             try {
-              const { data, error } = await client.from(config.table).select('*').limit(10000);
+              let query = client.from(config.table).select('*').limit(10000);
+              // За Отчетите ги сортираме от най-новия към най-стария
+              if (currentTab === 'otcheti') query = query.order('Дата', { ascending: false });
+              
+              const { data, error } = await query;
               if (error) throw error;
               globalRows = data || [];
-              filterTable(); // <-- Запазваме филтъра на търсачката при рефреш
+              filterTable();
             } catch (err) {
               console.error(err);
               document.getElementById('loadingLayout').innerHTML = '❌ Грешка при изтегляне: ' + err.message;
@@ -324,7 +329,7 @@
               });
 
               globalRows.sort((a,b) => a['ID Детайл'].localeCompare(b['ID Детайл']));
-              filterTable(); // <-- Запазваме филтъра на търсачката при рефреш
+              filterTable();
 
           } catch (err) {
               console.error("Грешка при изчисление на склад ГП:", err);
@@ -390,6 +395,20 @@
               td.innerHTML = `<span class="badge-status ${cls}">${val}</span>`;
               row.appendChild(td); return;
             }
+            
+            // КРАСИВО ФОРМАТИРАНЕ НА ЧАСОВЕТЕ
+            if (currentTab === 'otcheti' && (f.name === 'Дата' || f.name === 'Време Старт')) {
+                if (val) {
+                    try {
+                        let d = new Date(val);
+                        td.innerHTML = `<span style="color: #475569; font-weight: 600;">${d.toLocaleTimeString('bg-BG', {hour: '2-digit', minute:'2-digit'})}</span> <span style="font-size: 0.8em; color: #94a3b8;">(${d.toLocaleDateString('bg-BG', {day:'2-digit', month:'2-digit'})})</span>`;
+                    } catch(e) { td.innerText = val; }
+                } else {
+                    td.innerText = '-';
+                }
+                row.appendChild(td); return;
+            }
+
             td.innerText = val;
             row.appendChild(td);
           });
