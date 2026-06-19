@@ -58,7 +58,7 @@
     .lane-title { font-size: 12px; font-weight: 900; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; display: inline-block; letter-spacing: 1px;}
 
     .plan-group { border-left: 3px solid #475569; padding-left: 12px; margin-bottom: 8px; display: flex; flex-direction: column; }
-    .plan-label { font-size: 11px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 8px; }
+    .plan-label { font-size: 13px; font-weight: 800; color: #f8fafc; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px;}
     .family-row { display: flex; flex-direction: row; gap: 30px; padding: 5px 0; border-bottom: none; align-items: center; }
     .family-row:last-child { border-bottom: none; padding-bottom: 0; }
     .bom-column { display: flex; flex-direction: column; gap: 14px; justify-content: center; position: relative; z-index: 2;}
@@ -80,7 +80,7 @@
     
     .vsm-qty { font-size: 14px; font-weight: 800; color: #64748b; }
 
-    /* УМНИ ОПЕРАЦИИ (ЛУПА) */
+    /* УМНИ ОПЕРАЦИИ */
     .vsm-ops { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
     .op-text { white-space: nowrap; font-family: 'Sofia Sans', sans-serif; }
     
@@ -90,7 +90,7 @@
     /* Текуща операция (голяма) */
     .op-focus { font-size: 18px; font-weight: 900; letter-spacing: 0.5px; }
     .op-focus.active { color: #60a5fa; text-shadow: 0 0 8px rgba(59,130,246,0.4); } /* Започната (Синя) */
-    .op-focus.waiting { color: #94a3b8; } /* Още не е започната (Светло сива) */
+    .op-focus.waiting { color: #94a3b8; } /* Още не е започната (Сива) */
     
     /* Следваща операция (малка и сива) */
     .op-future { font-size: 13px; font-weight: 600; color: #64748b; opacity: 0.7; }
@@ -179,7 +179,7 @@
 
     let globalConnections = [];
     
-    // БЕЗОПАСНИ ID-та за детайлите със специални символи (" , /)
+    // БЕЗОПАСНИ ID-та за детайлите
     let domIdMap = {};
     let domIdCounter = 0;
     function getDomId(realId) {
@@ -214,17 +214,24 @@
 
     async function loadData() {
         try {
-            const [nodesResponse, routesResponse, reportsResponse] = await Promise.all([
+            // ДОБАВЕНО: Извличаме и таблицата 'plan', за да вземем месеца
+            const [nodesResponse, routesResponse, reportsResponse, plansResponse] = await Promise.all([
                 client.from('монитор_мастър_данни').select('*').limit(10000),
                 client.from('marshruti').select('*').limit(10000),
-                client.from('otcheti').select('*').limit(10000)
+                client.from('otcheti').select('*').limit(10000),
+                client.from('plan').select('id, Месец, Година, Статус').limit(1000)
             ]);
 
             if (nodesResponse.error) throw nodesResponse.error;
 
-            const nodesData = nodesResponse.data;
+            const nodesData = nodesResponse.data || [];
             const routesData = routesResponse.data || [];
             const reportsData = reportsResponse.data || [];
+            const plansData = plansResponse.data || [];
+
+            // Създаваме речник с плановете за бързо търсене
+            let planMap = {};
+            plansData.forEach(p => { planMap[p.id] = p; });
 
             let completedOps = {};
             reportsData.forEach(r => {
@@ -252,10 +259,22 @@
             };
             let connections = [];
 
-            nodesData.forEach(row => {
+            // Премахваме изпратените планове от монитора
+            let activeNodes = nodesData.filter(row => {
+                let p = planMap[row.plan_id];
+                if (p && p['Статус'] === '🚚 Изпратен') return false;
+                return true;
+            });
+
+            activeNodes.forEach(row => {
+                let pData = planMap[row.plan_id];
+                // Генерираме красиво име за плана: напр. "Юни 2026"
+                let pMonthStr = pData ? `${pData['Месец']} ${pData['Година']}` : `ID ${row.plan_id}`;
+
                 let n = {
                     id: row.node_id,
-                    planId: row.plan_id,
+                    planId: row.plan_id, 
+                    planMonth: pMonthStr, // ДОБАВЕНО: За групирането по месец
                     code: row.code,
                     parentCode: row.parent_code,
                     planQty: row.plan_qty,
@@ -291,7 +310,7 @@
                 
                 let isResolverByName = partType.toLowerCase().includes("резолвер");
                 let hasParent = (row.parent_code && row.level > 1);
-                let hasChildren = nodesData.some(r => r.parent_code === row.code && r.plan_id === row.plan_id);
+                let hasChildren = activeNodes.some(r => r.parent_code === row.code && r.plan_id === row.plan_id);
 
                 if (isResolverByName && !hasParent && hasChildren) {
                     masterData.assembly.push(n);
@@ -368,15 +387,16 @@
             return;
         }
 
+        // Групираме по МЕСЕЦ (planMonth), а не по planId
         const plans = {};
         nodeArray.forEach(n => {
-          if (!plans[n.planId]) plans[n.planId] = [];
-          plans[n.planId].push(n);
+          if (!plans[n.planMonth]) plans[n.planMonth] = [];
+          plans[n.planMonth].push(n);
         });
         
         let finalHTML = '';
 
-        for (const [planId, nodes] of Object.entries(plans)) {
+        for (const [planMonth, nodes] of Object.entries(plans)) {
           const nodeIds = new Set(nodes.map(n => n.id));
           const adj = {};
           nodes.forEach(n => adj[n.id] = []);
@@ -410,7 +430,7 @@
             }
           });
           
-          let planHTML = `<div class="plan-group"><div class="plan-label">План: ${planId}</div>`;
+          let planHTML = `<div class="plan-group"><div class="plan-label">ПЛАН: ${planMonth}</div>`;
 
           families.forEach(famNodes => {
             const childrenMap = {};
@@ -477,20 +497,17 @@
                 let opsHTML = '';
                 let titleClass = 'title-gray';
 
-                // --- ЛОГИКА ЗА СКРИВАНЕ НА ОПЕРАЦИИ (РОДИТЕЛИ, КОИТО ЧАКАТ) ---
                 let children = childMap[node.id] || [];
                 let allChildrenDone = true;
-                let anyChildDone = false; // <--- НОВО: Променлива за "поне едно дете е готово"
+                let anyChildDone = false;
                 
                 if (children.length > 0) {
-                    // Проверяваме дали ВСИЧКИ деца са готови (пазим го за оцветяването в жълто на финала)
                     allChildrenDone = children.every(cId => {
                         let chNode = allNodesMap[cId];
                         if(!chNode || !chNode.operations) return false;
                         return chNode.operations.findIndex(o => o.completed < chNode.planQty) === -1;
                     });
 
-                    // <--- НОВО: Проверяваме дали ПОНЕ ЕДНО дете е на 100% готово
                     anyChildDone = children.some(cId => {
                         let chNode = allNodesMap[cId];
                         if(!chNode || !chNode.operations) return false;
@@ -503,9 +520,7 @@
                     hasStarted = node.operations.some(o => o.completed > 0);
                 }
 
-                // АКО ИМА ДЕЦА, НО ТЕ НЕ СА ГОТОВИ И РОДИТЕЛЯТ НЕ Е ЗАПОЧНАТ -> СКРИВАМЕ ОПЕРАЦИИТЕ
                 let shouldShowOps = true;
-                // <--- ПРОМЯНА: Използваме !anyChildDone вместо !allChildrenDone
                 if (children.length > 0 && !hasStarted && !anyChildDone) {
                     shouldShowOps = false;
                 }
@@ -525,42 +540,38 @@
                     let html = '';
 
                     if (currIdx === -1) {
-                        // Детайлът е 100% готов
+                        // 100% ГОТОВО (Зелено)
                         titleClass = 'title-green';
                         let lastIdx = len - 1;
                         
-                        // Скриваме ВСИЧКИ минали операции зад трите точки (без финалната)
+                        // Скриваме всичко без последната
                         for(let i=0; i < lastIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
-                        
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
                         
-                        // Показваме само последната операция (в голямо зелено)
                         html += formatFocusGreen(node.operations[lastIdx]);
                         
                     } else {
-                        // Детайлът се работи (или е готов за стартиране)
-                        let isWorking = node.operations[currIdx].completed > 0 || currIdx > 0;
+                        // В ПРОЦЕС ИЛИ ЧАКАЩА
+                        
+                        // ВАЖНО: Синьо е САМО ако реално някой е започнал операцията!
+                        let isWorking = node.operations[currIdx].completed > 0;
                         if (isWorking) titleClass = 'title-blue';
 
-                        // Скриваме ВСИЧКИ минали операции зад трите точки (до текущата)
+                        // Скриваме миналите операции (зелени) зад ...
                         for(let i=0; i < currIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
-                        
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
                         
-                        // Текуща (Голяма Синя или Сива)
+                        // Показваме САМО текущата задача (Синя, ако е започната; Сива, ако се чака някой да я вземе)
                         html += isWorking ? formatFocusBlue(node.operations[currIdx]) : formatFocusGray(node.operations[currIdx]);
                         
-                        // Следваща (Сива)
-                        if (currIdx < len - 1) html += ' <span class="arr">➔</span> ' + formatFuture(node.operations[currIdx + 1]);
-
-                        // Бъдеще (останалите се крият зад трите точки)
-                        for(let i = currIdx + 2; i < len; i++) futureHiddenArr.push(formatFuture(node.operations[i]));
+                        // Скриваме ВСИЧКИ бъдещи операции зад ...
+                        for(let i = currIdx + 1; i < len; i++) futureHiddenArr.push(formatFuture(node.operations[i]));
                         if(futureHiddenArr.length > 0) {
                             html += `<span id="hist_future_${dId}" class="hidden-history"> <span class="arr">➔</span> ${futureHiddenArr.join(' <span class="arr">➔</span> ')}</span>`;
                             html += ` <span class="harmony-toggle" onclick="toggleHarmony('future_${dId}')" id="btn_future_${dId}">⋯</span>`;
@@ -575,7 +586,6 @@
                     titleClass = 'title-yellow'; 
                 }
 
-                // КАРТИТЕ СТОЯТ ВИНАГИ ВИДИМИ, ЗА ДА СЕ ВИЖДА ДЪРВОТО И СТРЕЛКИТЕ
                 colHTML += `
                   <div class="vsm-node" id="card_${dId}">
                     <div class="vsm-header">
