@@ -68,7 +68,7 @@
     .vsm-tooltip { display: none; position: absolute; left: 50%; bottom: 125%; transform: translateX(-50%); background: #020617; color: #fff; padding: 6px 10px; border-radius: 4px; font-size: 12px; font-weight: 800; z-index: 110; white-space: nowrap; box-shadow: 0 4px 10px rgba(0,0,0,0.5); border: 1px solid #ef4444; }
     .vsm-tooltip::before { content: ""; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border-width: 5px; border-style: solid; border-color: #020617 transparent transparent transparent; }
 
-    /* GPS ВИЗУАЛИЗАЦИЯ */
+    /* ВИЗУАЛИЗАЦИЯ НА ДЕТАЙЛИТЕ */
     .vsm-node { display: flex; flex-direction: column; gap: 2px; padding: 0; width: max-content; background: transparent; border: none; }
     .vsm-header { display: flex; align-items: baseline; gap: 6px; white-space: nowrap; border: none; padding-bottom: 2px; margin-bottom: 0px;}
     
@@ -80,7 +80,7 @@
     
     .vsm-qty { font-size: 14px; font-weight: 800; color: #64748b; }
 
-    /* УМНИ ОПЕРАЦИИ */
+    /* ОПЕРАЦИИ */
     .vsm-ops { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
     .op-text { white-space: nowrap; font-family: 'Sofia Sans', sans-serif; }
     
@@ -176,12 +176,11 @@
         'https://zdythzcgcjxwbxufunuh.supabase.co', 
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
     );
-
-    let globalConnections = [];
     
-    // БЕЗОПАСНИ ID-та за детайлите
+    let globalConnections = [];
     let domIdMap = {};
     let domIdCounter = 0;
+    
     function getDomId(realId) {
         if (!domIdMap[realId]) {
             domIdCounter++;
@@ -214,7 +213,6 @@
 
     async function loadData() {
         try {
-            // ДОБАВЕНО: Извличаме и таблицата 'plan', за да вземем месеца
             const [nodesResponse, routesResponse, reportsResponse, plansResponse] = await Promise.all([
                 client.from('монитор_мастър_данни').select('*').limit(10000),
                 client.from('marshruti').select('*').limit(10000),
@@ -229,7 +227,6 @@
             const reportsData = reportsResponse.data || [];
             const plansData = plansResponse.data || [];
 
-            // Създаваме речник с плановете за бързо търсене
             let planMap = {};
             plansData.forEach(p => { planMap[p.id] = p; });
 
@@ -252,67 +249,93 @@
                 routesByDetail[code].sort((a, b) => parseInt(a['№ Операция']) - parseInt(b['№ Операция']));
             });
 
-            let masterData = {
-                tiela: [], predni: [], zadni: [], mpr: [], statori: [], assembly: [],
-                var11: [], var25: [], bearings: [],
-                small_pins: [], small_studs: [], small_rotors: [], small_spools: [], small_others: []
-            };
-            let connections = [];
-
-            // Премахваме изпратените планове от монитора
+            // Премахваме плановете, които са вече изпратени
             let activeNodes = nodesData.filter(row => {
                 let p = planMap[row.plan_id];
                 if (p && p['Статус'] === '🚚 Изпратен') return false;
                 return true;
             });
 
+            // --- НОВАТА ЛОГИКА: ОБЕДИНЯВАНЕ НА ЕДНАКВИ ДЕТАЙЛИ ЗА ДАДЕН МЕСЕЦ ---
+            let mergedNodes = {};
+            let connections = [];
+
             activeNodes.forEach(row => {
                 let pData = planMap[row.plan_id];
-                // Генерираме красиво име за плана: напр. "Юни 2026"
-                let pMonthStr = pData ? `${pData['Месец']} ${pData['Година']}` : `ID ${row.plan_id}`;
+                let pMonthStr = pData ? `${pData['Месец']} ${pData['Година']}` : `ПЛАН ${row.plan_id}`;
+                let codeStr = row.code ? String(row.code).trim() : "";
+                
+                // Създаваме уникален идентификатор за "Месец + Детайл"
+                let mergedId = pMonthStr + '___' + codeStr;
 
-                let n = {
-                    id: row.node_id,
-                    planId: row.plan_id, 
-                    planMonth: pMonthStr, // ДОБАВЕНО: За групирането по месец
-                    code: row.code,
-                    parentCode: row.parent_code,
-                    planQty: row.plan_qty,
-                    warehouseQty: row.ready_qty,
-                    globalState: 'gray',
-                    operations: [],
-                    drawingUrl: row.drawing_url
-                };
-
-                if (row.parent_code && row.level > 1) {
-                    connections.push({ from: row.node_id, to: row.plan_id + '_' + row.parent_code });
+                if (!mergedNodes[mergedId]) {
+                    mergedNodes[mergedId] = {
+                        id: mergedId,
+                        planMonth: pMonthStr,
+                        code: codeStr,
+                        planQty: 0, 
+                        warehouseQty: row.ready_qty || 0, // Склада не се събира, той е общ
+                        globalState: 'gray',
+                        operations: [],
+                        drawingUrl: row.drawing_url,
+                        partType: row.part_type ? String(row.part_type) : "",
+                        hasParent: false,
+                        hasChildren: false
+                    };
                 }
 
-                let codeStr = row.code ? String(row.code).trim() : "";
-                let partRoutes = routesByDetail[codeStr] || [];
+                // Събираме необходимите количества от различните поръчки
+                mergedNodes[mergedId].planQty += (parseFloat(row.plan_qty) || 0);
+
+                // Създаваме връзките (стрелките)
+                if (row.parent_code && row.level > 1) {
+                    let parentCodeStr = String(row.parent_code).trim();
+                    let parentMergedId = pMonthStr + '___' + parentCodeStr;
+                    
+                    // Добавяме стрелка само ако вече не съществува
+                    if (!connections.find(c => c.from === mergedId && c.to === parentMergedId)) {
+                        connections.push({ from: mergedId, to: parentMergedId });
+                    }
+                    mergedNodes[mergedId].hasParent = true;
+                }
+            });
+
+            // Отбелязваме кои възли имат деца (сочат към тях със стрелка)
+            let parentIds = new Set(connections.map(c => c.to));
+            Object.values(mergedNodes).forEach(n => {
+                if (parentIds.has(n.id)) {
+                    n.hasChildren = true;
+                }
+            });
+
+            // --- РАЗПРЕДЕЛЯНЕ ПО ПРОЗОРЦИ ---
+            let masterData = {
+                tiela: [], predni: [], zadni: [], mpr: [], statori: [], assembly: [],
+                var11: [], var25: [], bearings: [],
+                small_pins: [], small_studs: [], small_rotors: [], small_spools: [], small_others: []
+            };
+
+            Object.values(mergedNodes).forEach(n => {
+                let partRoutes = routesByDetail[n.code] || [];
 
                 if (partRoutes.length > 0) {
                     partRoutes.forEach(route => {
                         let opName = String(route['Име на операция']).trim();
-                        let opKey = codeStr + '_' + opName;
+                        let opKey = n.code + '_' + opName;
                         let doneQty = completedOps[opKey] || 0;
                         n.operations.push({ name: opName, completed: doneQty });
                     });
                 } else {
                     n.operations.push({ 
-                        name: row.ready_qty >= row.plan_qty ? 'Готов (Склад)' : 'Чакащ (Доставка)', 
-                        completed: row.ready_qty || 0 
+                        name: n.warehouseQty >= n.planQty ? 'Готов (Склад)' : 'Чакащ (Доставка)', 
+                        completed: n.warehouseQty || 0 
                     });
                 }
 
-                let partType = row.part_type ? String(row.part_type) : "";
-                let typeStr = (partType + " " + codeStr).toLowerCase().replace(/[\s\.\-\_]+/g, '');
-                
-                let isResolverByName = partType.toLowerCase().includes("резолвер");
-                let hasParent = (row.parent_code && row.level > 1);
-                let hasChildren = activeNodes.some(r => r.parent_code === row.code && r.plan_id === row.plan_id);
+                let typeStr = (n.partType + " " + n.code).toLowerCase().replace(/[\s\.\-\_]+/g, '');
+                let isResolverByName = n.partType.toLowerCase().includes("резолвер");
 
-                if (isResolverByName && !hasParent && hasChildren) {
+                if (isResolverByName && !n.hasParent && n.hasChildren) {
                     masterData.assembly.push(n);
                 } 
                 else if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
@@ -387,7 +410,6 @@
             return;
         }
 
-        // Групираме по МЕСЕЦ (planMonth), а не по planId
         const plans = {};
         nodeArray.forEach(n => {
           if (!plans[n.planMonth]) plans[n.planMonth] = [];
@@ -481,18 +503,12 @@
               levels[lvl].forEach(node => {
                 let dId = getDomId(node.id);
 
-                const isRoot = !node.parentCode; 
+                const isRoot = !node.hasParent; 
                 const rootMarker = isRoot ? '<span style="margin-right:4px; color:#fb923c;" title="Краен Продукт">🔸</span>' : '';
-                const packageIcon = node.isPackaged ? '📦 ' : '';
                 const warehouseQty = node.warehouseQty || 0; 
                 
                 const drawingLinkHTML = (node.drawingUrl && node.drawingUrl.startsWith('http')) 
                   ? `<a href="${node.drawingUrl}" target="_blank" style="text-decoration:none; margin-left:6px;" title="Отвори чертеж">📐</a>` : '';
-                  
-                let warningHTML = '';
-                if (node.materialWarning) {
-                   warningHTML = `<span class="tooltip-container hide-on-machine"><span class="material-warning-trigger" onclick="toggleTooltip(event, '${dId}')">⚠️</span><div id="tooltip_${dId}" class="vsm-tooltip">✗ ${node.materialWarning}</div></span>`;
-                }
 
                 let opsHTML = '';
                 let titleClass = 'title-gray';
@@ -544,7 +560,6 @@
                         titleClass = 'title-green';
                         let lastIdx = len - 1;
                         
-                        // Скриваме всичко без последната
                         for(let i=0; i < lastIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
@@ -555,22 +570,17 @@
                         
                     } else {
                         // В ПРОЦЕС ИЛИ ЧАКАЩА
-                        
-                        // ВАЖНО: Синьо е САМО ако реално някой е започнал операцията!
                         let isWorking = node.operations[currIdx].completed > 0;
                         if (isWorking) titleClass = 'title-blue';
 
-                        // Скриваме миналите операции (зелени) зад ...
                         for(let i=0; i < currIdx; i++) pastHiddenArr.push(formatPast(node.operations[i]));
                         if(pastHiddenArr.length > 0) {
                             html += `<span class="harmony-toggle" onclick="toggleHarmony('past_${dId}')" id="btn_past_${dId}">⋯</span> `;
                             html += `<span id="hist_past_${dId}" class="hidden-history">${pastHiddenArr.join(' <span class="arr">➔</span> ')} <span class="arr">➔</span> </span>`;
                         }
                         
-                        // Показваме САМО текущата задача (Синя, ако е започната; Сива, ако се чака някой да я вземе)
                         html += isWorking ? formatFocusBlue(node.operations[currIdx]) : formatFocusGray(node.operations[currIdx]);
                         
-                        // Скриваме ВСИЧКИ бъдещи операции зад ...
                         for(let i = currIdx + 1; i < len; i++) futureHiddenArr.push(formatFuture(node.operations[i]));
                         if(futureHiddenArr.length > 0) {
                             html += `<span id="hist_future_${dId}" class="hidden-history"> <span class="arr">➔</span> ${futureHiddenArr.join(' <span class="arr">➔</span> ')}</span>`;
@@ -589,9 +599,8 @@
                 colHTML += `
                   <div class="vsm-node" id="card_${dId}">
                     <div class="vsm-header">
-                      <span class="vsm-title ${titleClass}">${rootMarker}${packageIcon}${node.code}${drawingLinkHTML}</span>
+                      <span class="vsm-title ${titleClass}">${rootMarker}${node.code}${drawingLinkHTML}</span>
                       <span class="vsm-qty">| ${warehouseQty}/${node.planQty}</span>
-                      ${warningHTML}
                     </div>
                     ${opsHTML !== '' ? opsHTML : ''}
                   </div>
