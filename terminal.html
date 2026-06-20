@@ -276,11 +276,11 @@
             if (routesRes.error) throw routesRes.error;
             if (reportsRes.error) throw reportsRes.error;
 
-            // Създаваме речник за вътрешните имена
+           // Създаваме речник за вътрешните имена (без значение от главни/малки букви)
             let namesMap = {};
             if (nomRes.data) {
                 nomRes.data.forEach(n => {
-                    let code = String(n['ID Детайл']).trim();
+                    let code = String(n['ID Детайл']).trim().toLowerCase();
                     namesMap[code] = n['Вътрешно име'] || '';
                 });
             }
