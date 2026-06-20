@@ -469,7 +469,7 @@
                             id: safeId,
                             plan_id: planId,
                             name: code,
-                            internalName: namesMap[code] || '', // ДОБАВЕНО: Записваме вътрешното име
+                            internalName: namesMap[code.toLowerCase()] || '',
                             op: opName,
                             opNum: parseInt(route['№ Операция']) || 0,
                             next_op: idx < routes.length - 1 ? String(routes[idx+1]['Име на операция']).trim() : "Готово",
