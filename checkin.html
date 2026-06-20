@@ -90,6 +90,10 @@
           'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
         );
 
+        // Координати на цеха
+        const WORKSHOP_LAT = 41.8937;
+        const WORKSHOP_LNG = 23.4875;
+
         // Четем параметъра от URL адреса (?action=in или ?action=out)
         const urlParams = new URLSearchParams(window.location.search);
         const actionParam = urlParams.get('action'); 
@@ -128,23 +132,88 @@
         setInterval(updateTime, 1000);
         updateTime();
 
+        // Изчисляване на разстояние (Haversine формула)
+        function getDistanceInMeters(lat1, lon1, lat2, lon2) {
+            const R = 6371e3; // радиус на Земята в метри
+            const p1 = lat1 * Math.PI/180;
+            const p2 = lat2 * Math.PI/180;
+            const dp = (lat2-lat1) * Math.PI/180;
+            const dl = (lon2-lon1) * Math.PI/180;
+            const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return Math.round(R * c);
+        }
+
+        // Взимане на локация
+        function getUserLocation() {
+            return new Promise((resolve) => {
+                if (!navigator.geolocation) {
+                    resolve({ loc: "Не се поддържа", note: "⚠️ GPS НЕ СЕ ПОДДЪРЖА" });
+                    return;
+                }
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        const distance = getDistanceInMeters(lat, lng, WORKSHOP_LAT, WORKSHOP_LNG);
+                        let note = distance > 200 ? `⚠️ ИЗВЪН ОБЕКТА (${distance}м)` : "";
+                        resolve({ loc: `${lat.toFixed(5)}, ${lng.toFixed(5)}`, note: note });
+                    },
+                    (error) => {
+                        resolve({ loc: "GPS Отказан", note: "⚠️ ЛИПСВА ЛОКАЦИЯ" });
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            });
+        }
+
         async function handleSubmit(e) {
             e.preventDefault();
             const email = emailInput.value.trim().toLowerCase();
             if (!email) return;
 
-            Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-
             try {
-                // Директен запис в таблицата chekiraniya
-                const { error } = await client
+                // 1. ПРОВЕРКА ЗА ДУБЛИРАНЕ
+                Swal.fire({ title: 'Проверка...', text: 'Сверяване с базата данни', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                const { data: lastRecord, error: fetchErr } = await client
+                    .from('chekiraniya')
+                    .select('Действие')
+                    .eq('Имейл', email)
+                    .order('Време', { ascending: false })
+                    .limit(1);
+
+                if (fetchErr) throw fetchErr;
+
+                if (lastRecord && lastRecord.length > 0) {
+                    const lastAction = lastRecord[0]['Действие'];
+                    if (actionText === 'Влизане' && lastAction === 'Влизане') {
+                        Swal.fire('Внимание!', 'Вече сте чекирани за Влизане. Първо трябва да маркирате Излизане.', 'warning');
+                        return;
+                    }
+                    if (actionText === 'Излизане' && (lastAction === 'Излизане' || lastAction === 'Авто излизане')) {
+                        Swal.fire('Внимание!', 'Вече сте се изписали от цеха.', 'warning');
+                        return;
+                    }
+                }
+
+                // 2. ВЗИМАНЕ НА ЛОКАЦИЯ
+                Swal.fire({ title: 'Проверка на локация...', text: 'Моля, разрешете достъп до GPS, ако бъдете попитани.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const geoInfo = await getUserLocation();
+
+                // 3. ЗАПИСВАНЕ
+                Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                const { error: insertErr } = await client
                     .from('chekiraniya')
                     .insert([{
                         "Имейл": email,
-                        "Действие": actionText
+                        "Действие": actionText,
+                        "Време": new Date().toISOString(),
+                        "Локация": geoInfo.loc,
+                        "Бележка": geoInfo.note
                     }]);
 
-                if (error) throw error;
+                if (insertErr) throw insertErr;
 
                 // Запомняме имейла в паметта на браузъра на този телефон
                 localStorage.setItem('workerEmail', email);
