@@ -7,37 +7,49 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-      body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; padding: 0; color: #1c1e21; overflow-x: hidden; }
-      .container { padding: 10px; display: flex; flex-direction: column; align-items: center; }
+      body { font-family: 'Segoe UI', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; color: #1c1e21; overflow-x: hidden; }
+      .container { padding: 15px; display: flex; flex-direction: column; align-items: center; }
       
-      .app-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.1); box-sizing: border-box; }
-      .editable-header { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 6px; transition: background 0.2s; }
+      .app-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; }
+      .editable-header { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 6px 10px; border-radius: 8px; transition: background 0.2s; border: 1px solid transparent; }
+      .editable-header:hover { background: #f8fafc; border-color: #e2e8f0; }
       .editable-header:active { background: #f1f5f9; }
       .edit-icon { font-size: 0.9em; opacity: 0.4; }
       
-     .machine-title { 
-    font-weight: 800; 
-    color: #2980b9; 
-    text-transform: uppercase; 
-    font-size: 0.85em; 
-    max-width: 40vw; 
-    white-space: nowrap; 
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-}
-      .operator-name { font-size: 0.85em; color: #7f8c8d; font-weight: bold; }
-      #tasksContainer { width: 100%; max-width: 450px; margin-top: 15px; }
-      .card { background: white; padding: 15px; margin-bottom: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); width: 100%; box-sizing: border-box; position: relative; }
-      .card-blue { border-left: 8px solid #3498db; }
-      .card-green { border-left: 8px solid #2ecc71; }
-      .op-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-      .detail-title { font-size: 1.1em; font-weight: 800; color: #2c3e50; line-height: 1.2; max-width: 70%; }
-      .qty-badge { background: #e74c3c; color: white; padding: 5px 12px; border-radius: 20px; font-size: 0.9em; font-weight: bold; }
-      input[type="number"] { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; text-align: center; font-size: 1.3em; font-weight: bold; box-sizing: border-box; }
-      .btn, .btn-danger { color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; }
-      .btn { background: #16a34a; flex: 1; }
-      .btn-danger { background: #e74c3c; flex: 0.4; }
+      .machine-title { font-weight: 900; color: #1e3a8a; text-transform: uppercase; font-size: 0.9em; max-width: 40vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .operator-name { font-size: 0.85em; color: #64748b; font-weight: bold; }
       
+      #tasksContainer { width: 100%; max-width: 1400px; margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+      
+      /* НОВИЯТ ДИЗАЙН НА КАРТИТЕ */
+      .card { background: white; border-radius: 16px; padding: 24px; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; transition: transform 0.2s, box-shadow 0.2s; position: relative; }
+      .card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); border-color: #cbd5e1; }
+      
+      .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+      .plan-label { color: #64748b; font-weight: 800; font-size: 0.85em; text-transform: uppercase; letter-spacing: 0.5px; }
+      .qty-badge { background-color: #ef4444; color: white; padding: 6px 14px; border-radius: 20px; font-weight: 900; font-size: 1em; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3); }
+      
+      .detail-info { margin-bottom: 20px; }
+      .internal-name { font-size: 1.4em; font-weight: 900; color: #1e293b; margin-bottom: 4px; line-height: 1.2; }
+      .internal-name a { color: #1e3a8a; text-decoration: none; transition: color 0.2s; }
+      .internal-name a:hover { color: #2563eb; text-decoration: underline; }
+      .detail-code { font-size: 1em; font-weight: 700; color: #94a3b8; }
+      
+      .route-flow { background: #f8fafc; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 8px; margin-bottom: 15px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-weight: 700; font-size: 0.95em; }
+      .op-active { color: #2563eb; display: flex; align-items: center; gap: 4px; font-size: 1.1em; }
+      .op-pending { color: #94a3b8; }
+      .route-arrow { color: #cbd5e1; font-size: 0.9em; }
+      
+      input[type="number"] { width: 100%; padding: 12px; border: 2px solid #cbd5e1; border-radius: 8px; text-align: center; font-size: 1.3em; font-weight: bold; box-sizing: border-box; }
+      input[type="number"]:focus { border-color: #3b82f6; outline: none; }
+      
+      .btn, .btn-danger { color: white; border: none; padding: 14px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 1em; transition: opacity 0.2s; }
+      .btn { background: #16a34a; flex: 1; }
+      .btn:hover { background: #15803d; }
+      .btn-danger { background: #e74c3c; flex: 0.4; }
+      .btn-danger:hover { background: #c0392b; }
+      
+      /* ИСТОРИЯ */
       .local-history { display: none; position: fixed; bottom: 80px; right: 15px; background: rgba(255,255,255,0.98); border: 1px solid #cbd5e1; padding: 15px 12px 12px 12px; border-radius: 12px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-size: 13px; z-index: 9000; }
       .local-history h4 { margin: 0 0 10px 0; color: #475569; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;}
       .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
@@ -45,8 +57,8 @@
       .history-item:last-child { border-bottom: none; }
       .history-time { color: #64748b; font-weight: bold; font-size: 11px; margin-bottom: 2px;}
       
-      .history-toggle-btn { position: fixed; bottom: 15px; right: 15px; background: #334155; color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 9001; display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
-      .history-toggle-btn:active { background: #1e293b; transform: scale(0.95); }
+      .history-toggle-btn { position: fixed; bottom: 15px; right: 15px; background: #1e293b; color: white; border: none; border-radius: 50%; width: 55px; height: 55px; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); cursor: pointer; z-index: 9001; display: flex; justify-content: center; align-items: center; transition: background 0.2s; }
+      .history-toggle-btn:active { background: #0f172a; transform: scale(0.95); }
       .close-history-btn { position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 16px; cursor: pointer; color: #94a3b8; font-weight: bold; }
     </style>
   </head>
@@ -54,22 +66,24 @@
     <div class="app-header">
       <div class="editable-header" onclick="changeOperator()" title="Смени оператор">
         <div>
-          <div style="font-weight:bold; color:#34495e;">MES ТЕРМИНАЛ</div>
+          <div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div>
           <div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div>
         </div>
         <span class="edit-icon">✏️</span>
       </div>
       
       <div class="editable-header" onclick="changeMachine()" title="Смени машина">
-        <div class="machine-title" id="uiMachineName">ВСИЧКИ</div>
+        <div style="text-align: right;">
+            <div style="font-size: 0.7em; color: #94a3b8; font-weight: bold; text-transform: uppercase;">Работно място</div>
+            <div class="machine-title" id="uiMachineName">ВСИЧКИ</div>
+        </div>
         <span class="edit-icon">✏️</span>
       </div>
     </div>
     
     <div class="container">
       <div id="tasksContainer">
-         <div id="loadingMsg" style="text-align:center; padding: 20px; font-weight:bold; color:#7f8c8d;">Търсене на задачи... 🔍</div>
-         <div id="cardsArea"></div>
+         <div id="loadingMsg" style="text-align:center; padding: 40px; font-weight:bold; color:#64748b; font-size: 1.2em; grid-column: 1/-1;">Търсене на задачи... 🔄</div>
       </div>
     </div>
 
@@ -121,8 +135,8 @@
       function addLogToHistory(type, qty, taskId) {
          var now = new Date();
          var timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
-         var titleEl = document.querySelector('#card_' + taskId + ' .detail-title');
-         var name = titleEl ? titleEl.innerText.replace(' 🔗', '') : 'Детайл';
+         let taskData = globalTasks.find(t => t.id === taskId);
+         var name = taskData ? (taskData.internalName || taskData.name) : 'Детайл';
          
          localHistoryData.unshift({ time: timeStr, type: type, qty: qty, name: name });
          if (localHistoryData.length > 6) localHistoryData.pop(); 
@@ -243,22 +257,33 @@
       }
 
       async function loadTasks() {
-        document.getElementById('cardsArea').innerHTML = '';
-        document.getElementById('loadingMsg').style.display = 'block';
+        var container = document.getElementById('tasksContainer');
+        container.innerHTML = '<div id="loadingMsg" style="text-align:center; padding: 40px; font-weight:bold; color:#64748b; font-size: 1.2em; grid-column: 1/-1;">Търсене на задачи... 🔄</div>';
         
         try {
-            const [plansRes, bomRes, routesRes, reportsRes, skladRes] = await Promise.all([
-                client.from('plan').select('*').limit(10000),
+            // ДОБАВЕНО: Изтегляме и Номенклатурата, за да намерим Вътрешното име!
+            const [plansRes, bomRes, routesRes, reportsRes, skladRes, nomRes] = await Promise.all([
+                client.from('plan').select('*').eq('Статус', 'Активен').limit(10000), // Вземаме само Активните
                 client.from('bom').select('*').limit(10000),
                 client.from('marshruti').select('*').limit(10000),
                 client.from('otcheti').select('*').limit(10000), 
-                client.from('sklad').select('*').limit(10000) 
+                client.from('sklad').select('*').limit(10000),
+                client.from('Номенклатура').select('ID Детайл, Вътрешно име').limit(10000) 
             ]);
 
             if (plansRes.error) throw plansRes.error;
             if (bomRes.error) throw bomRes.error;
             if (routesRes.error) throw routesRes.error;
             if (reportsRes.error) throw reportsRes.error;
+
+            // Създаваме речник за вътрешните имена
+            let namesMap = {};
+            if (nomRes.data) {
+                nomRes.data.forEach(n => {
+                    let code = String(n['ID Детайл']).trim();
+                    namesMap[code] = n['Вътрешно име'] || '';
+                });
+            }
 
             globalBomData = bomRes.data || [];
             globalRoutesByDetail = {};
@@ -422,7 +447,6 @@
                         let isBlocked = hasLimit && maxAllowed <= 0;
                         
                         let machineName = route['Машина'] || '';
-                        let shouldShow = true;
 
                         if (currentMachine && currentMachine.trim() !== "") {
                             let selectedMachines = currentMachine.split(',').map(m => m.toLowerCase().trim());
@@ -445,6 +469,7 @@
                             id: safeId,
                             plan_id: planId,
                             name: code,
+                            internalName: namesMap[code] || '', // ДОБАВЕНО: Записваме вътрешното име
                             op: opName,
                             opNum: parseInt(route['№ Операция']) || 0,
                             next_op: idx < routes.length - 1 ? String(routes[idx+1]['Име на операция']).trim() : "Готово",
@@ -470,35 +495,36 @@
 
         } catch (err) {
             console.error(err);
-            document.getElementById('loadingMsg').innerHTML = '❌ Критична грешка при зареждане: ' + err.message;
+            document.getElementById('tasksContainer').innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color:#ef4444; font-size:1.2em; font-weight:bold;">❌ Критична грешка при зареждане:<br>' + err.message + '</div>';
         }
       }
 
       function renderTasks(tasks) {
-        document.getElementById('loadingMsg').style.display = 'none';
-        var container = document.getElementById('cardsArea');
+        var container = document.getElementById('tasksContainer');
         
         if(tasks.length === 0) { 
-          container.innerHTML = '<div style="text-align:center; margin-top:30px; font-size:1.2em; color: #27ae60; font-weight: bold;">🎉 Няма чакащи задачи за избраните машини!</div>';
+          container.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; font-size:1.3em; color: #16a34a; font-weight: 900;">🎉 Всички задачи за избраните машини са изпълнени!</div>';
           return;
         }
         
         var html = '';
         tasks.forEach(function(t) {
-          var cardClass = (t.type === "ЗЕЛЕНА") ? "card-green" : "card-blue";
+          // Дизайн на цвета на картата
+          let borderStyle = t.type === 'ЗЕЛЕНА' ? 'border-left: 6px solid #22c55e;' : 'border-left: 6px solid #3b82f6;';
           
-          var linkHtml = t.name;
+          let displayName = t.internalName ? t.internalName : t.name;
+          let displayCode = t.internalName ? `№ ${t.name}` : 'Липсва вътрешно име';
+          
+          let linkHtml = displayName;
           if (t.drawing_link && t.drawing_link.startsWith('http')) {
-             linkHtml = `<a href="${t.drawing_link}" target="_blank" style="color: #1e3a8a; font-weight: bold; text-decoration: underline;">${t.name} 🔗</a>`;
+              linkHtml = `<a href="${t.drawing_link}" target="_blank">${displayName} 🔗</a>`;
           }
 
           var sopHtml = (t.sop_link && t.sop_link.startsWith('http')) 
-              ? `<a href="${t.sop_link}" target="_blank" style="display:inline-block; margin-top:8px; background:#f39c12; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">📑 Отвори СОП</a>` : '';
+              ? `<a href="${t.sop_link}" target="_blank" style="display:inline-block; margin-bottom:12px; background:#f59e0b; color:white; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold; font-size:12px;">📑 Отвори СОП</a>` : '';
               
           var descHtml = t.desc 
-              ? `<div style="background-color: #fef9c3; border-left: 4px solid #facc15; padding: 8px; margin-top: 8px; font-size: 13px; color: #854d0e; font-weight: 600;">💡 ${t.desc}</div>` : '';
-
-          var planBadge = `<div style="font-size: 11px; color: #94a3b8; font-weight: bold; text-transform: uppercase; margin-bottom: 4px;">ПЛАН: ${t.plan_id} | НУЖНИ: ${t.totalNeed} бр. (ГОТОВИ: ${t.totalDone} бр.) | МАШИНА: ${t.machine || 'Обща'}</div>`;
+              ? `<div style="background-color: #fef9c3; border-left: 4px solid #eab308; padding: 10px; margin-bottom: 12px; font-size: 13px; color: #854d0e; font-weight: 700; border-radius: 4px;">💡 ${t.desc}</div>` : '';
 
           var bomBadgeHtml = '';
           var actionButtonHtml = '';
@@ -506,46 +532,60 @@
 
           if (t.isBlocked) {
               let reasonsText = t.blockingReasons.length > 0 ? t.blockingReasons.join(', ') : "Предходни детайли";
-              bomBadgeHtml = `<div style="background-color: #fee2e2; border-left: 4px solid #ef4444; padding: 8px; margin-top: 8px; font-size: 13px; color: #991b1b; font-weight: 600;">🚫 Липсва: ${reasonsText}</div>`;
-              actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:not-allowed;">🛑 БЛОКИРАНА ЗАДАЧА</button>`;
+              bomBadgeHtml = `<div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #991b1b; font-weight: 700; text-align: center;">🚫 Липсва: ${reasonsText}</div>`;
+              actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:not-allowed;">🛑 БЛОКИРАНА ЗАДАЧА</button>`;
           } else if (t.hasLimit) {
-              bomBadgeHtml = `<div style="background-color: #dcfce7; border-left: 4px solid #22c55e; padding: 8px; margin-top: 8px; font-size: 13px; color: #166534; font-weight: 600;">✅ Налични за: ${t.maxAllowed} бр.</div>`;
-              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:pointer;">🚀 ПОЕМИ ЗАДАЧА</button>`;
+              bomBadgeHtml = `<div style="background-color: #dcfce7; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #166534; font-weight: 800; text-align: center;">📦 Възможни: ${t.maxAllowed} бр.</div>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); transition: background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">🚀 ПОЕМИ ЗАДАЧА</button>`;
           } else {
-              bomBadgeHtml = `<div style="background-color: #e0e7ff; border-left: 4px solid #6366f1; padding: 8px; margin-top: 8px; font-size: 13px; color: #3730a3; font-weight: 600;">⚡ Първа стъпка (свободно производство)</div>`;
-              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 18px; font-size: 1.2em; font-weight: bold; border: none; border-radius: 8px; margin-top: 15px; cursor:pointer;">🚀 ПОЕМИ ЗАДАЧА</button>`;
+              bomBadgeHtml = `<div style="background-color: #e0e7ff; border: 1px solid #c7d2fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #3730a3; font-weight: 800; text-align: center;">⚡ Първа стъпка (свободно производство)</div>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); transition: background 0.2s;" onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">🚀 ПОЕМИ ЗАДАЧА</button>`;
           }
 
           html += `
-            <div class="card ${cardClass}" id="card_${t.id}">
-              <div class="op-header">
-                <div style="flex: 1; padding-right: 10px;">
-                  ${planBadge}
-                  <div class="detail-title">${linkHtml}</div>
-                  ${sopHtml}
-                  ${descHtml}
-                  ${bomBadgeHtml}
-                </div>
-              </div>
-              <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-bottom: 12px;">
-                <span style="font-weight: 800; color: #2980b9; font-size: 1.1em;">▶ ${t.op}</span> 
-                <span style="color: #cbd5e1; font-weight: 900;">➔</span> 
-                <span style="color: #94a3b8; font-weight: 600;">${t.next_op}</span>
+            <div class="card" id="card_${t.id}" style="${borderStyle}">
+              <div class="task-header">
+                  <span class="plan-label">ПЛАН: ${t.plan_id.replace('_', ' ')}</span>
+                  <span class="qty-badge" title="Целево количество за плана">${t.totalNeed} бр.</span>
               </div>
               
-              <div id="free_state_${t.id}" style="display: block;">
+              <div class="detail-info">
+                  <div class="internal-name">${linkHtml}</div>
+                  <div class="detail-code">${displayCode}</div>
+              </div>
+              
+              ${sopHtml}
+              ${descHtml}
+
+              <div class="route-flow">
+                  <span class="op-active">▶ ${t.op}</span>
+                  <span class="route-arrow">➔</span>
+                  <span class="op-pending">${t.next_op}</span>
+              </div>
+
+              ${bomBadgeHtml}
+              
+              <div id="free_state_${t.id}">
                 ${actionButtonHtml}
               </div>
 
               <div id="focus_state_${t.id}" style="display: none;">
-                <div style="background-color: #e0f2fe; padding: 15px; border-radius: 8px; margin-top: 15px; border: 2px solid #bae6fd;">
-                  <p style="color: #0369a1; font-weight: bold; text-align:center; margin-top:0;">🟢 Работиш по тази задача</p>
-                  <input type="number" id="qty_${t.id}" value="${t.defaultQty}" ${inputMaxHtml} inputmode="numeric" style="margin-bottom:12px;">
-                  <div style="display: flex; gap: 8px;">
+                <div style="background-color: #f8fafc; padding: 15px; border-radius: 12px; margin-top: 5px; border: 2px solid #bae6fd;">
+                  <p style="color: #0369a1; font-weight: 900; text-align:center; margin-top:0; font-size: 1.1em;">🟢 В ПРОЦЕС НА РАБОТА</p>
+                  
+                  <div style="display:flex; justify-content:space-between; margin-bottom: 5px; font-size: 0.85em; font-weight:bold; color: #64748b;">
+                      <span>Готови до момента:</span>
+                      <span>${t.totalDone} бр.</span>
+                  </div>
+
+                  <input type="number" id="qty_${t.id}" value="${t.defaultQty}" ${inputMaxHtml} inputmode="numeric" style="margin-bottom:15px;">
+                  
+                  <div style="display: flex; gap: 10px;">
                     <button class="btn" id="btn_${t.id}" onclick="finishTask('${t.id}', this)">✅ ОТЧЕТИ</button>
                     <button class="btn-danger" id="btn_scrap_${t.id}" onclick="reportScrap('${t.id}', this)">БРАК</button>
                   </div>
-                  <button onclick="pauseTaskDOM('${t.id}')" style="background: transparent; color: #1e3a8a; border: 1px solid #3498db; padding: 12px; border-radius: 6px; font-weight: bold; width: 100%; margin-top: 15px; cursor: pointer;">📋 ПОЕМИ ДРУГА ЗАДАЧА</button>
+                  
+                  <button onclick="pauseTaskDOM('${t.id}')" style="background: white; color: #475569; border: 2px solid #cbd5e1; padding: 14px; border-radius: 8px; font-weight: 800; width: 100%; margin-top: 15px; cursor: pointer; transition: background 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">📋 ВРЪЩАНЕ НАЗАД</button>
                 </div>
               </div>
             </div>`;
@@ -558,14 +598,12 @@
         document.querySelectorAll('.card').forEach(c => { if (c.id !== 'card_' + taskId) c.style.display = 'none'; });
         document.getElementById('free_state_' + taskId).style.display = 'none';
         document.getElementById('focus_state_' + taskId).style.display = 'block';
-        
-        // ЗАПАЗВАМЕ ЧАСА НА СТАРТИРАНЕ ЗА ТАЗИ ЗАДАЧА
         window['startTime_' + taskId] = new Date().toISOString();
       }
 
       function pauseTaskDOM(taskId) {
         if (navigator.vibrate) navigator.vibrate(50);
-        document.querySelectorAll('.card').forEach(c => c.style.display = 'block');
+        document.querySelectorAll('.card').forEach(c => c.style.display = 'flex'); // Flex заради новия дизайн
         document.getElementById('free_state_' + taskId).style.display = 'block';
         document.getElementById('focus_state_' + taskId).style.display = 'none';
       }
@@ -593,7 +631,6 @@
             Swal.fire({ title: 'Отчитане...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
             
             try {
-                // Вземаме записания старт. Ако случайно няма, слагаме текущия час
                 let startedAt = window['startTime_' + taskId] || new Date().toISOString();
 
                 const { error } = await client.from('otcheti').insert([{
@@ -647,7 +684,7 @@
                 checkboxHtml += '</div>';
 
                 const { value: formValues, isConfirmed } = await Swal.fire({
-                    title: 'Бракуване на ' + taskData.name,
+                    title: 'Бракуване на детайл',
                     html: `Ще бракувате <b>${val} бр.</b><br>` + checkboxHtml,
                     icon: 'warning',
                     showCancelButton: true,
