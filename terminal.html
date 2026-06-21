@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MES Терминал</title>
-    <!-- Паспорт на приложението -->
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -12,7 +11,6 @@
       body { font-family: 'Segoe UI', sans-serif; background-color: #f1f5f9; margin: 0; padding: 0; color: #1c1e21; overflow-x: hidden; }
       .container { padding: 15px; display: flex; flex-direction: column; align-items: center; }
       
-      /* КОМПАКТЕН ХЕДЪР ЗА ТЕЛЕФОН */
       .app-header { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.05); box-sizing: border-box; position: sticky; top: 0; z-index: 100; }
       .profile-area { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px; border-radius: 8px; }
       .profile-area:active { background: #f1f5f9; }
@@ -25,16 +23,12 @@
       .btn-out { background-color: #dc2626; }
       .btn-out:active { background-color: #b91c1c; transform: scale(0.95); }
       
-      /* ИЗБОР НА МАШИНА ПОД ХЕДЪРА */
       .machine-bar { width: 100%; background: #e2e8f0; padding: 8px 0; text-align: center; font-size: 0.85em; color: #475569; font-weight: 700; text-transform: uppercase; cursor: pointer; }
       .machine-title { color: #1e3a8a; font-weight: 900; text-decoration: underline; margin-left: 5px;}
 
-      /* ЕДНА КОЛОНА ЗА ЗАДАЧИТЕ */
       #tasksContainer { width: 100%; max-width: 550px; margin: 15px auto 80px auto; display: flex; flex-direction: column; gap: 20px; }
       
-      /* ДИЗАЙН НА КАРТИТЕ */
       .card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px -3px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; display: flex; flex-direction: column; position: relative; }
-      
       .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
       .plan-label { color: #64748b; font-weight: 800; font-size: 0.8em; text-transform: uppercase; letter-spacing: 0.5px; }
       .qty-badge { background-color: #ef4444; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 900; font-size: 0.95em; box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3); }
@@ -56,7 +50,6 @@
       .btn { background: #16a34a; flex: 1; }
       .btn-danger { background: #e74c3c; flex: 0.4; }
       
-      /* ИСТОРИЯ */
       .local-history { display: none; position: fixed; bottom: 80px; right: 15px; background: rgba(255,255,255,0.98); border: 1px solid #cbd5e1; padding: 15px 12px 12px 12px; border-radius: 12px; width: 300px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-size: 13px; z-index: 9000; }
       .local-history h4 { margin: 0 0 10px 0; color: #475569; text-align: center; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px;}
       .history-list { list-style: none; padding: 0; margin: 0; max-height: 200px; overflow-y: auto; }
@@ -67,7 +60,6 @@
     </style>
   </head>
   <body>
-    <!-- ХЕДЪР -->
     <div class="app-header">
       <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
         <div>
@@ -83,7 +75,6 @@
       </div>
     </div>
 
-    <!-- ИЗБОР НА МАШИНА -->
     <div class="machine-bar" onclick="changeMachine()">
         Работно място: <span class="machine-title" id="uiMachineName">ВСИЧКИ</span> ✏️
     </div>
@@ -107,7 +98,6 @@
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkeXRoemNnY2p4d2J4dWZ1bnVoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2MTcxNTMsImV4cCI6MjA5NjE5MzE1M30.XGZX5DHhJCGz9X5s__3iuSghukjanyJmGKv8MLig_jE'
       );
 
-      // Глобални променливи
       let currentOperator = "";
       let currentEmail = "";
       let currentMachine = "";
@@ -116,11 +106,9 @@
       let globalBomData = [];
       let globalRoutesByDetail = {};
 
-      // Координати на цеха за GPS проверката
       const WORKSHOP_LAT = 41.8937;
       const WORKSHOP_LNG = 23.4875;
 
-      // --- ИНИЦИАЛИЗАЦИЯ И ПРОФИЛ ---
       async function initTerminal() {
           currentOperator = localStorage.getItem('mes_operator');
           currentEmail = localStorage.getItem('mes_email');
@@ -173,7 +161,6 @@
           }
       }
 
-      // --- ЛОГИКА ЗА ЧЕКИРАНЕ С GPS ---
       function getDistanceInMeters(lat1, lon1, lat2, lon2) {
           const R = 6371e3; 
           const p1 = lat1 * Math.PI/180; const p2 = lat2 * Math.PI/180;
@@ -205,25 +192,36 @@
           try {
               Swal.fire({ title: 'Проверка...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
               
-              // 1. Проверка за дублиране
-              const { data: lastRecord, error: fetchErr } = await client.from('chekiraniya').select('Действие').eq('Имейл', currentEmail).order('Време', { ascending: false }).limit(1);
+              const { data: lastRecord, error: fetchErr } = await client.from('chekiraniya').select('Действие, Време').eq('Имейл', currentEmail).order('Време', { ascending: false }).limit(1);
               if (fetchErr) throw fetchErr;
 
               if (lastRecord && lastRecord.length > 0) {
                   const lastAction = lastRecord[0]['Действие'];
-                  if (actionType === 'Влизане' && lastAction === 'Влизане') {
-                      Swal.fire('Внимание!', 'Вече сте чекирани за Влизане днес. Приятна работа!', 'info'); return;
-                  }
-                  if (actionType === 'Излизане' && (lastAction === 'Излизане' || lastAction === 'Авто излизане')) {
-                      Swal.fire('Внимание!', 'Вече сте се изписали от системата.', 'info'); return;
+                  const lastTime = new Date(lastRecord[0]['Време']);
+                  const now = new Date();
+
+                  // СИСТЕМА ЗА АВТО-КОРЕКЦИЯ
+                  if (lastAction === 'Влизане' && lastTime.toDateString() !== now.toDateString()) {
+                      let autoOutTime = new Date(lastTime);
+                      autoOutTime.setHours(17, 0, 0, 0); // Изписва го в 17:00 за миналия ден
+                      await client.from('chekiraniya').insert([{
+                          "Имейл": currentEmail, "Действие": 'Авто излизане',
+                          "Време": autoOutTime.toISOString(), "Локация": "Системно", "Бележка": "Авто корекция (Липсва излизане)"
+                      }]);
+                      // Не спираме функцията, за да може телефонът да продължи и да го чекира за ДНЕС
+                  } else {
+                      if (actionType === 'Влизане' && lastAction === 'Влизане') {
+                          Swal.fire('Внимание!', 'Вече сте чекирани за Влизане днес. Приятна работа!', 'info'); return;
+                      }
+                      if (actionType === 'Излизане' && (lastAction === 'Излизане' || lastAction === 'Авто излизане')) {
+                          Swal.fire('Внимание!', 'Вече сте се изписали от системата.', 'info'); return;
+                      }
                   }
               }
 
-              // 2. Вземане на GPS
               Swal.fire({ title: 'Проверка на локация...', text: 'Моля, разрешете достъп до GPS на телефона.', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
               const geoInfo = await getUserLocation();
 
-              // 3. Запис в базата
               Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
               const { error: insertErr } = await client.from('chekiraniya').insert([{
                   "Имейл": currentEmail, "Действие": actionType, "Време": new Date().toISOString(), "Локация": geoInfo.loc, "Бележка": geoInfo.note
@@ -238,7 +236,6 @@
           }
       }
 
-      // --- ЛОГИКА ЗА ИСТОРИЯ ---
       function updateHistoryUI() {
         var list = document.getElementById('historyList');
         if (localHistoryData.length === 0) { list.innerHTML = '<li class="history-item" style="color:#94a3b8; text-align:center;">Няма скорошни действия</li>'; return; }
@@ -256,7 +253,6 @@
          localHistoryData.unshift({ time: timeStr, type: type, qty: qty, name: name }); if (localHistoryData.length > 6) localHistoryData.pop(); updateHistoryUI();
       }
 
-      // --- ИЗБОР НА МАШИНА И ИЗТЕГЛЯНЕ НА ЗАДАЧИ ---
       async function changeMachine(isInitial = false) {
           Swal.fire({ title: 'Зареждане...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
           try {
