@@ -557,11 +557,148 @@
       function filterTable() { const q = document.getElementById('searchInput').value.toLowerCase().trim(); if(!q) { renderDynamicTable(); return; } const f = globalRows.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q))); renderDynamicTable(f); }
       
       // Скрити за прегледност (но работят перфектно от оригиналния код)
-      function openAddModal() { /* Логика за добавяне */ }
-      function openEditModal(i) { /* Логика за редакция */ }
-      function closeModal() { document.getElementById('modalBackdrop').style.display = 'none'; }
-      async function saveForm(e) { e.preventDefault(); }
-      async function deleteItem(i) { /* Логика за изтриване */ }
+      // --- ФУНКЦИИ ЗА ДОБАВЯНЕ, РЕДАКЦИЯ И ИЗТРИВАНЕ ---
+      
+      function buildForm(data = null) {
+        const area = document.getElementById('formFieldsArea');
+        area.innerHTML = '';
+        const fields = tableConfigs[currentTab].fields;
+        
+        fields.forEach(f => {
+          if (f.hideOnAdd && !isEditMode) return; 
+          
+          const group = document.createElement('div');
+          group.className = 'form-group';
+          
+          const label = document.createElement('label');
+          label.innerText = f.label || f.name;
+          group.appendChild(label);
+          
+          let input;
+          if (f.type === 'select') {
+            input = document.createElement('select');
+            f.options.forEach(opt => {
+              const option = document.createElement('option');
+              option.value = opt;
+              option.innerText = opt;
+              input.appendChild(option);
+            });
+            if (data && data[f.name]) input.value = data[f.name];
+          } else {
+            input = document.createElement('input');
+            input.type = f.type === 'number' ? 'number' : 'text';
+            if (f.type === 'number') input.step = 'any';
+            
+            if (data && data[f.name] !== undefined && data[f.name] !== null) {
+              input.value = data[f.name];
+            } else if (f.def !== undefined) {
+               input.value = typeof f.def === 'function' ? f.def() : f.def;
+            }
+          }
+          
+          input.id = 'inp_' + f.name;
+          if (f.required) input.required = true;
+          
+          // Заключваме полето, ако е само за четене
+          if (f.readonly || (isEditMode && f.readonlyOnEdit)) {
+              input.readOnly = true;
+              input.style.backgroundColor = '#f1f5f9';
+              input.style.color = '#64748b';
+              input.style.cursor = 'not-allowed';
+              if (f.type === 'select') input.disabled = true; 
+          }
+          
+          group.appendChild(input);
+          area.appendChild(group);
+        });
+      }
+
+      function openAddModal() {
+        isEditMode = false;
+        editingIndex = null;
+        document.getElementById('modalTitle').innerHTML = '➕ Добавяне: ' + tableConfigs[currentTab].label.replace(/[^а-яА-Я ]/g, '').trim();
+        buildForm();
+        document.getElementById('modalBackdrop').style.display = 'flex';
+      }
+
+      function openEditModal(index) {
+        isEditMode = true;
+        editingIndex = index;
+        document.getElementById('modalTitle').innerHTML = '✏️ Редакция: ' + tableConfigs[currentTab].label.replace(/[^а-яА-Я ]/g, '').trim();
+        buildForm(globalRows[index]);
+        document.getElementById('modalBackdrop').style.display = 'flex';
+      }
+
+      function closeModal() {
+        document.getElementById('modalBackdrop').style.display = 'none';
+      }
+
+      async function saveForm(e) {
+        e.preventDefault();
+        const config = tableConfigs[currentTab];
+        const btn = e.target.querySelector('button[type="submit"]');
+        btn.innerText = 'Записване...';
+        btn.disabled = true;
+        
+        let payload = {};
+        config.fields.forEach(f => {
+          const el = document.getElementById('inp_' + f.name);
+          if (el && !f.readonly && !(isEditMode && f.readonlyOnEdit)) {
+              let val = el.value;
+              if (f.type === 'number') val = parseFloat(val) || 0;
+              payload[f.name] = val;
+          }
+        });
+        
+        try {
+          if (isEditMode) {
+             const row = globalRows[editingIndex];
+             const keyVal = row[config.key];
+             const { error } = await client.from(config.table).update(payload).eq(config.key, keyVal);
+             if (error) throw error;
+             Swal.fire({icon: 'success', title: 'Успешно запазено!', timer: 1000, showConfirmButton: false});
+          } else {
+             const { error } = await client.from(config.table).insert([payload]);
+             if (error) throw error;
+             Swal.fire({icon: 'success', title: 'Успешно добавено!', timer: 1000, showConfirmButton: false});
+          }
+          closeModal();
+          loadCurrentTableData();
+        } catch (err) {
+           Swal.fire('Грешка', err.message, 'error');
+        } finally {
+           btn.innerText = 'Запази запис';
+           btn.disabled = false;
+        }
+      }
+
+      async function deleteItem(index) {
+        const config = tableConfigs[currentTab];
+        const row = globalRows[index];
+        const keyVal = row[config.key];
+        
+        const res = await Swal.fire({
+           title: 'Сигурни ли сте?',
+           text: "Този запис ще бъде изтрит безвъзвратно!",
+           icon: 'warning',
+           showCancelButton: true,
+           confirmButtonColor: '#ef4444',
+           confirmButtonText: 'Да, изтрий!',
+           cancelButtonText: 'Отказ'
+        });
+        
+        if (res.isConfirmed) {
+           try {
+             Swal.fire({title: 'Изтриване...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
+             const { error } = await client.from(config.table).delete().eq(config.key, keyVal);
+             if (error) throw error;
+             Swal.fire({icon: 'success', title: 'Изтрито!', timer: 1000, showConfirmButton: false});
+             loadCurrentTableData();
+           } catch(err) {
+             Swal.fire('Грешка', err.message, 'error');
+           }
+        }
+      }
 
     </script>
   </body>
