@@ -214,7 +214,6 @@
     async function loadData() {
         try {
             const [nodesResponse, routesResponse, reportsResponse, plansResponse] = await Promise.all([
-                const [nodesResponse, routesResponse, reportsResponse, plansResponse] = await Promise.all([
                 client.from('монитор_мастър_данни').select('*').limit(100000),
                 client.from('marshruti').select('*').limit(100000),
                 client.from('otcheti').select('*').limit(100000),
@@ -329,13 +328,10 @@
                 let searchKey = `${n.planId}___${n.code.toUpperCase()}`;
                 let isDirectlyInPlan = explicitPlanItems.has(searchKey);
                 
-                // === НОВАТА ЛОГИКА ЗА # ===
-                // Проверяваме дали детайлът съдържа # и дали неговият "чист" вариант (без #) е в плана
                 let baseCode = n.code.toUpperCase().replace(/#+$/, '').trim();
                 let baseSearchKey = `${n.planId}___${baseCode}`;
                 let isHashVariantOfPlan = n.code.includes('#') && explicitPlanItems.has(baseSearchKey);
 
-                // Ако е директно в плана ИЛИ е вариант с # на детайл от плана -> Отива в големия прозорец
                 if (isDirectlyInPlan || isHashVariantOfPlan) {
                     masterData.assembly.push(n);
                 } 
@@ -588,7 +584,6 @@
                     opsHTML = `<div class="vsm-ops">${html}</div>`;
                 }
                 
-                // Проверката за жълт цвят вече важи за всички крайни продукти
                 if (children.length > 0 && allChildrenDone && isRoot && titleClass !== 'title-green') {
                     titleClass = 'title-yellow'; 
                 }
