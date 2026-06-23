@@ -26,7 +26,6 @@
       .machine-bar { width: 100%; background: #e2e8f0; padding: 8px 0; text-align: center; font-size: 0.85em; color: #475569; font-weight: 700; text-transform: uppercase; cursor: pointer; }
       .machine-title { color: #1e3a8a; font-weight: 900; text-decoration: underline; margin-left: 5px;}
 
-      /* НОВ CSS ЗА ФИЛТЪРА НА ЗАДАЧИТЕ */
       .task-filters { display: flex; width: 100%; background: white; border-bottom: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
       .t-filter-btn { flex: 1; padding: 12px 5px; text-align: center; font-size: 0.85em; font-weight: 900; color: #64748b; background: transparent; border: none; border-bottom: 3px solid transparent; cursor: pointer; text-transform: uppercase; transition: all 0.2s; }
       .t-filter-btn.active { color: #2563eb; border-bottom-color: #2563eb; background: #f8fafc; }
@@ -66,12 +65,15 @@
   </head>
   <body>
     <div class="app-header">
-      <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
-        <img src="icon.png" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-right: 5px;" onerror="this.style.display='none'">
-        <div>
-          <div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div>
-          <div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div>
+      <div style="display: flex; align-items: center; gap: 15px;">
+        <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
+          <img src="icon.png" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-right: 5px;" onerror="this.style.display='none'">
+          <div>
+            <div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div>
+            <div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div>
+          </div>
         </div>
+        <button onclick="enableNotifications()" style="background:none; border:none; font-size:24px; cursor:pointer; padding:0;" id="notifBtn" title="Включи известия">🔕</button>
       </div>
       
       <div class="action-buttons">
@@ -117,17 +119,40 @@
       let globalBomData = [];
       let globalRoutesByDetail = {};
 
-      // НОВИ ПРОМЕНЛИВИ ЗА СЪСТОЯНИЕТО
       let currentTaskFilter = 'all';
-      let activeTaskId = null; // Пази дали операторът в момента работи по задача
+      let activeTaskId = null; 
 
       const WORKSHOP_LAT = 41.8937;
       const WORKSHOP_LNG = 23.4875;
+
+      // ЛОГИКА ЗА ИЗВЕСТИЯ
+      function checkNotifStatus() {
+          if ("Notification" in window && Notification.permission === "granted") {
+              document.getElementById('notifBtn').innerText = "🔔";
+          }
+      }
+
+      function enableNotifications() {
+          if (!("Notification" in window)) {
+              Swal.fire('Грешка', 'Този браузър или телефон не поддържа известия.', 'error');
+              return;
+          }
+          Notification.requestPermission().then(permission => {
+              if (permission === "granted") {
+                  document.getElementById('notifBtn').innerText = "🔔";
+                  new Notification("Готово!", { body: "Известията са включени успешно.", icon: "icon.png" });
+              } else {
+                  Swal.fire('Внимание', 'Известията бяха отказани.', 'warning');
+              }
+          });
+      }
 
       async function initTerminal() {
           currentOperator = localStorage.getItem('mes_operator');
           currentEmail = localStorage.getItem('mes_email');
           let savedMachine = localStorage.getItem('mes_machine');
+
+          checkNotifStatus(); // Проверява дали камбанката трябва да е жълта при стартиране
 
           if (!currentOperator || !currentEmail) {
               await setupProfile();
@@ -140,16 +165,14 @@
           } else {
               currentMachine = savedMachine;
               document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ";
-              loadTasks(); // Първоначално зареждане (с надпис)
+              loadTasks(); 
           }
 
-          // АВТОМАТИЧНО ОБНОВЯВАНЕ (ТИХО)
           setInterval(() => {
-              // Обновяваме САМО ако работникът не е цъкнал "ПОЕМИ ЗАДАЧА"
               if (!activeTaskId) {
-                  loadTasks(true); // true означава тихо зареждане
+                  loadTasks(true); 
               }
-          }, 30000); // 30 секунди
+          }, 30000); 
       }
 
       function setTaskFilter(filterType) {
@@ -169,7 +192,7 @@
                   '<input id="swal-email" class="swal2-input" type="email" style="margin-top:0;" value="' + (currentEmail || '') + '">' +
                   '<div style="margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: center; gap: 10px;">' +
                   '<button type="button" onclick="window.location.href=\'admin.html\'" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">🔒 Админ</button>' +
-                  '<button type="button" onclick="window.location.href=\'index.html\'" style="background: transparent; border: 1px solid #bae6fd; color: #0284c7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📺 Монитор</button></div>',
+                  '<button type="button" onclick="window.location.href=\'monitor.html\'" style="background: transparent; border: 1px solid #bae6fd; color: #0284c7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📺 Монитор</button></div>',
               focusConfirm: false,
               allowOutsideClick: !!currentOperator,
               confirmButtonText: 'Запази профила',
@@ -259,6 +282,19 @@
               }]);
               if (insertErr) throw insertErr;
 
+              // АЛАРМА ПРИ ЗАКЪСНЕНИЕ
+              if (actionType === 'Влизане') {
+                  let now = new Date();
+                  if (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0)) {
+                      if ("Notification" in window && Notification.permission === "granted") {
+                          new Notification("⚠️ Закъснение", {
+                              body: `Регистриран вход в ${now.toLocaleTimeString('bg-BG')}`,
+                              icon: "icon.png"
+                          });
+                      }
+                  }
+              }
+
               let iconType = actionType === 'Влизане' ? 'success' : 'info';
               Swal.fire({ icon: iconType, title: 'Успешно!', text: `${actionType} е регистрирано.`, timer: 2000, showConfirmButton: false });
 
@@ -322,7 +358,6 @@
           } catch (err) { Swal.fire('Грешка', err.message, 'error'); }
       }
 
-      // Добавихме параметър isSilent
       async function loadTasks(isSilent = false) {
         var container = document.getElementById('tasksContainer');
         if (!isSilent) {
@@ -461,7 +496,6 @@
       function renderTasks(tasks) {
         var container = document.getElementById('tasksContainer');
         
-        // ПРИЛАГАНЕ НА ФИЛТЪРА
         let filteredTasks = tasks;
         if (currentTaskFilter === 'ready') {
             filteredTasks = tasks.filter(t => !t.isBlocked);
@@ -529,7 +563,7 @@
 
       function claimCurrentTaskDOM(taskId) {
         if (navigator.vibrate) navigator.vibrate(50);
-        activeTaskId = taskId; // Спираме автоматичното обновяване
+        activeTaskId = taskId; 
         document.querySelectorAll('.card').forEach(c => { if (c.id !== 'card_' + taskId) c.style.display = 'none'; });
         document.getElementById('free_state_' + taskId).style.display = 'none';
         document.getElementById('focus_state_' + taskId).style.display = 'block';
@@ -539,7 +573,7 @@
 
       function pauseTaskDOM(taskId) {
         if (navigator.vibrate) navigator.vibrate(50);
-        activeTaskId = null; // Пускаме автоматичното обновяване отново
+        activeTaskId = null; 
         document.querySelectorAll('.card').forEach(c => c.style.display = 'flex'); 
         document.getElementById('free_state_' + taskId).style.display = 'block';
         document.getElementById('focus_state_' + taskId).style.display = 'none';
@@ -563,7 +597,7 @@
                 const { error } = await client.from('otcheti').insert([{ "ID Детайл": taskData.name, "Оператор": currentOperator, "Количество": val, "Операция": taskData.op, "Статус": "Отчетено", "Дата": new Date().toISOString(), "Време Старт": startedAt }]);
                 if(error) throw error;
                 addLogToHistory('ГОТОВО', val, taskId); 
-                activeTaskId = null; // Освобождаваме задачата
+                activeTaskId = null; 
                 Swal.fire({ icon: 'success', title: 'Браво!', text: 'Отчетени: ' + val + ' бр.', timer: 1500, showConfirmButton: false }).then(() => { loadTasks(); });
             } catch(err) { Swal.fire('❌ Грешка при запис', err.message, 'error'); btn.disabled = false; btn.innerHTML = "✅ ОТЧЕТИ"; }
           }
@@ -612,7 +646,7 @@
               const { error } = await client.from('otcheti').insert(inserts);
               if (error) throw error;
               addLogToHistory('БРАК', val, taskData.id); Swal.close(); 
-              activeTaskId = null; // Освобождаваме задачата
+              activeTaskId = null; 
               loadTasks(); 
           } catch(err) { Swal.fire('❌ Грешка при запис', err.message, 'error'); }
       }
