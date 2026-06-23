@@ -19,7 +19,6 @@
       .tab-btn:hover { background-color: #f1f5f9; color: #0f172a; }
       .tab-btn.active { background-color: #e0e7ff; color: #4338ca; }
 
-      /* МАКСИМАЛНО ШИРОК ЕКРАН ЗА УДОБСТВО */
       .main-container { max-width: 98%; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
       
       .controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; }
@@ -177,11 +176,7 @@
     </div>
 
     <script>
-      // ==========================================
-      // 🔐 ЗАЩИТА С ПАРОЛА - ПРОМЕНИ КОДА ТУК
-      // ==========================================
       const ADMIN_PIN = "0000"; 
-      // ==========================================
 
       window.onload = () => {
           if (sessionStorage.getItem('is_admin_logged') !== 'true') {
@@ -260,9 +255,12 @@
         const sidebar = document.getElementById('personnelSidebar');
         
         addBtn.innerText = `➕ Нов запис в ${config.label.replace(/[^а-яА-Я ]/g, '').trim()}`; 
-        addBtn.style.display = config.readOnlyTab ? 'none' : 'block';
+        addBtn.style.display = config.readOnlyTab ? 'none' : 'flex';
         
-        pdfBtn.style.display = (tabKey === 'plan') ? 'block' : 'none';
+        // Показваме PDF бутона само на таб Месечен План
+        if (pdfBtn) {
+            pdfBtn.style.display = (tabKey === 'plan') ? 'flex' : 'none';
+        }
 
         if (tabKey === 'chekiraniya') {
             sidebar.style.display = 'block';
@@ -274,9 +272,7 @@
         loadCurrentTableData();
       }
 
-      // =============================================================
-      // НОВО: СУПЕР СТРОГ И ПОДРЕДЕН PDF ИМПОРТ (ГЛЕДА САМО КОЛОНА 1 И 2)
-      // =============================================================
+      // ПРЕЦИЗНИЯТ PDF РОБОТ
       async function processPDF(event) {
           const file = event.target.files[0];
           if (!file) return;
@@ -310,8 +306,6 @@
                   const page = await pdf.getPage(i);
                   const content = await page.getTextContent();
                   
-                  // Вземаме само текстове, които физически се намират в Колона 1 и 2 (X координата под 230)
-                  // Тотално игнорираме всичко останало на листа!
                   let validItems = content.items
                       .filter(item => item.str.trim() !== '')
                       .map(item => ({
@@ -321,31 +315,27 @@
                       }))
                       .filter(item => item.x < 230); // ЖЕЛЯЗНА ГРАНИЦА: Спира колона "Description"
 
-                  // Сортираме елементите стриктно по редове отгоре надолу (Y), а в реда - отляво надясно (X)
                   validItems.sort((a, b) => {
                       if (Math.abs(b.y - a.y) > 4) return b.y - a.y; 
                       return a.x - b.x;
                   });
 
-                  // Сега, когато в паметта имаме само първите 2 колони, намирането на QTY и Part Number е безгрешно
                   for (let j = 0; j < validItems.length; j++) {
                       let item = validItems[j];
                       
                       if (partRegex.test(item.text)) {
-                          // Търсим бройката (чисто число), стояща непосредствено преди този детайл на същия ред
                           if (j > 0 && /^\d+$/.test(validItems[j - 1].text)) {
                               let qtyItem = validItems[j - 1];
                               
-                              // Уверяваме се, че числото е на същия ред и е вляво от детайла
                               if (Math.abs(qtyItem.y - item.y) < 5 && qtyItem.x < item.x) {
                                   let qty = parseInt(qtyItem.text, 10);
                                   if (qty > 0 && qty < 10000) {
-                                     extractedPlan.push({ 
+                                      extractedPlan.push({ 
                                           'ID Детайл': item.text.toUpperCase(), 
                                           'Целево количество': qty,
                                           'Месец': targetMonth,
                                           'Година': targetYear,
-                                          'Статус': 'Активен'
+                                          'Статус': 'Активен' // ТУК Е НА БЪЛГАРСКИ
                                       });
                                   }
                               }
@@ -359,7 +349,6 @@
                   return;
               }
 
-              // За разлика от преди, НЕ ГРУПИРАМЕ по име, за да се запази точният ред на редовете от документа!
               let summaryHtml = `<div style="max-height: 300px; overflow-y: auto; text-align: left; font-size: 14px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; background:#f8fafc;"><ol style="margin:0; padding-left:20px;">`;
               extractedPlan.forEach(p => summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0;"><b style="color: #16a34a; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#1e3a8a;">${p['ID Детайл']}</span></li>`);
               summaryHtml += `</ol></div>`;
@@ -389,7 +378,6 @@
               Swal.fire('Грешка при импорта', err.message, 'error');
           }
       }
-      // =============================================================
 
       async function loadPersonnelSidebar() {
           const list = document.getElementById('sidebarList');
@@ -420,7 +408,7 @@
       async function loadWorkerAttendance() {
           const tbody = document.getElementById('workerAttList'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Зареждане...</td></tr>';
           try {
-              const { data, error } = await client.from('chekiraniya').select('*').eq('Имейл', currentFolderEmail).order('Вreme', { ascending: false }).limit(100);
+              const { data, error } = await client.from('chekiraniya').select('*').eq('Имейл', currentFolderEmail).order('Време', { ascending: false }).limit(100);
               if (error) throw error;
               if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Няма записи.</td></tr>'; return; }
               let html = '';
@@ -559,7 +547,6 @@
             }
             if (currentTab === 'chekiraniya' && f.name === 'Бележка' && val.includes('ИЗВЪН ОБЕКТА')) { td.innerHTML = `⚠️ <b style="color:#dc2626;">${val}</b>`; row.appendChild(td); return; }
             
-            // КРАСИВИ БУТОНИ ЗА ЛИНКОВЕТЕ КЪМ ЧЕРТЕЖИ И СОП
             if (typeof val === 'string' && val.startsWith('http')) {
                 td.innerHTML = `<a href="${val}" target="_blank" style="background:#e0e7ff; color:#4338ca; padding:5px 12px; border-radius:6px; font-weight:800; text-decoration:none; font-size:0.85em; display:inline-block;">🔗 Отвори</a>`;
                 row.appendChild(td); return;
@@ -580,7 +567,6 @@
 
       function filterTable() { const q = document.getElementById('searchInput').value.toLowerCase().trim(); if(!q) { renderDynamicTable(); return; } const f = globalRows.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q))); renderDynamicTable(f); }
       
-      // --- ФУНКЦИИ ЗА РЪЧНО ДОБАВЯНЕ И РЕДАКЦИЯ ---
       function buildForm(data = null) {
         const area = document.getElementById('formFieldsArea'); area.innerHTML = ''; const fields = tableConfigs[currentTab].fields;
         fields.forEach(f => {
