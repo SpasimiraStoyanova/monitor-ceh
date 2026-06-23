@@ -213,7 +213,6 @@
 
     async function loadData() {
         try {
-            // Взимаме и колоната "ID Детайл" от плана, за да знаем ТОЧНО какво е поръчано
             const [nodesResponse, routesResponse, reportsResponse, plansResponse] = await Promise.all([
                 client.from('монитор_мастър_данни').select('*').limit(100000),
                 client.from('marshruti').select('*').limit(100000),
@@ -229,7 +228,7 @@
             const plansData = plansResponse.data || [];
 
             let planMap = {};
-            let explicitPlanItems = new Set(); // ЖЕЛЯЗНОТО ПРАВИЛО: Пази само ръчно въведените в плана детайли
+            let explicitPlanItems = new Set(); 
 
             plansData.forEach(p => { 
                 planMap[p.id] = p; 
@@ -277,7 +276,7 @@
                 if (!mergedNodes[mergedId]) {
                     mergedNodes[mergedId] = {
                         id: mergedId,
-                        planId: row.plan_id, // Запазваме системния номер на плана
+                        planId: row.plan_id, 
                         planMonth: pMonthStr,
                         code: codeStr,
                         planQty: 0, 
@@ -326,13 +325,18 @@
 
                 let typeStr = (n.partType + " " + n.code).toLowerCase().replace(/[\s\.\-\_]+/g, '');
                 
-                // === ПРОВЕРКАТА ===
-                // Питаме системата: "Този детайл въведен ли е изрично в Месечния план?"
                 let searchKey = `${n.planId}___${n.code.toUpperCase()}`;
                 let isDirectlyInPlan = explicitPlanItems.has(searchKey);
+                
+                // === НОВАТА ЛОГИКА ЗА # ===
+                // Проверяваме дали детайлът съдържа # и дали неговият "чист" вариант (без #) е в плана
+                let baseCode = n.code.toUpperCase().replace(/#+$/, '').trim();
+                let baseSearchKey = `${n.planId}___${baseCode}`;
+                let isHashVariantOfPlan = n.code.includes('#') && explicitPlanItems.has(baseSearchKey);
 
-                if (isDirectlyInPlan) {
-                    masterData.assembly.push(n); // Отива директно горе!
+                // Ако е директно в плана ИЛИ е вариант с # на детайл от плана -> Отива в големия прозорец
+                if (isDirectlyInPlan || isHashVariantOfPlan) {
+                    masterData.assembly.push(n);
                 } 
                 else if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
                 else if (typeStr.includes("преден") || typeStr.includes("предни") || typeStr.includes("преденкапак")) masterData.predni.push(n);
