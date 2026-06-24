@@ -292,7 +292,13 @@
                     let translated = nomRes.data.find(n => String(n['Вътрешно име']).trim() === originalPlanCode);
                     if (translated && translated['ID Детайл']) {
                         actualBomName = String(translated['ID Детайл']).trim();
-                        displayName = `${originalPlanCode} - ${actualBomName}`; 
+                        
+                        // АНТИ-ПОВТОРЕНИЕ: Ако са еднакви, не ги слепвай два пъти!
+                        if (originalPlanCode.toUpperCase() === actualBomName.toUpperCase()) {
+                            displayName = actualBomName;
+                        } else {
+                            displayName = `${originalPlanCode} - ${actualBomName}`; 
+                        }
                     }
                 }
 
@@ -396,7 +402,6 @@
                 let baseCode = n.code.toUpperCase().replace(/#+$/, '').trim();
                 let isHashVariantOfPlan = n.code.includes('#') && explicitPlanItems.has(`${n.planId}___${baseCode}`);
 
-                // ТУК Е ГЛАВНАТА ПРОМЯНА! Първо проверяваме категорията, ако не е известна (Резолвер), отива в Assembly
                 if (typeStr.includes("тяло") || typeStr.includes("тела")) masterData.tiela.push(n);
                 else if (typeStr.includes("преден") || typeStr.includes("предни") || typeStr.includes("преденкапак")) masterData.predni.push(n);
                 else if (typeStr.includes("заден") || typeStr.includes("задни") || typeStr.includes("заденкапак")) masterData.zadni.push(n);
@@ -409,7 +414,6 @@
                 else if (typeStr.includes("щифт")) masterData.small_pins.push(n);
                 else if (typeStr.includes("шпилк")) masterData.small_studs.push(n);
                 else if (typeStr.includes("макар")) masterData.small_spools.push(n);
-                // Ако е директно в плана, но не е нито едно от горните, значи е Резолвер!
                 else if (isDirectlyInPlan || isHashVariantOfPlan || typeStr.includes("резолвер") || n.code.startsWith("575") || n.code.toUpperCase().startsWith("H25") || n.code.toUpperCase().startsWith("DC25")) {
                     masterData.assembly.push(n);
                 } 
