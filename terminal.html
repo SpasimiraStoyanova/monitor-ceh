@@ -15,10 +15,9 @@
           appId: "2507a9cb-0d28-4952-9b7b-42e800a61613",
           serviceWorkerParam: { scope: "/monitor-ceh/" },
           serviceWorkerPath: "/monitor-ceh/OneSignalSDKWorker.js",
-          // Включваме интелигентната камбанка
           notifyButton: {
             enable: true,
-            position: 'bottom-right',
+            position: 'bottom-left', // ПРЕМЕСТЕНА ДОЛУ ВЛЯВО!
             colors: { 'circle.background': '#2563eb' }
           }
         });
@@ -196,8 +195,7 @@
 
       function triggerPushPrompt() {
           OneSignalDeferred.push(function(OneSignal) {
-              // Най-новият и сигурен метод за извикване на прозореца
-              OneSignal.Notifications.requestPermission();
+              OneSignal.Slidedown.promptPush();
           });
       }
 
@@ -205,7 +203,7 @@
           const { value: formValues } = await Swal.fire({
               title: 'Профил Работник',
               html:
-                  '<div style="background: #e0e7ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;"><button type="button" onclick="triggerPushPrompt()" style="background: #4338ca; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width:100%; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">🔔 Поискай известия (Ръчно)</button><p style="font-size: 11px; color: #475569; margin: 5px 0 0 0; text-align: center;">Или използвайте синята камбанка долу вдясно.</p></div>' +
+                  '<div style="background: #e0e7ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;"><button type="button" onclick="triggerPushPrompt()" style="background: #4338ca; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width:100%; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">🔔 Поискай известия (Ръчно)</button><p style="font-size: 11px; color: #475569; margin: 5px 0 0 0; text-align: center;">Или използвайте синята камбанка долу вляво.</p></div>' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-bottom:5px; color:#475569;">Име и Фамилия</label>' +
                   '<input id="swal-name" class="swal2-input" style="margin-top:0;" value="' + (currentOperator || '') + '">' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-top:15px; margin-bottom:5px; color:#475569;">Личен Имейл</label>' +
@@ -426,7 +424,7 @@
                         if (idx > 0) {
                             let prevRoute = routes[idx - 1]; let prevOpName = String(prevRoute['Име на операция']).trim(); let prevOpKey = code + '_' + prevOpName;
                             let prevDoneQty = completedOps[prevOpKey] || 0; maxAllowed = prevDoneQty - consumedHere;
-                            if (maxAllowed <= 0) blockingReasons.push(`Оп. ${prevOpName} (${prevDoneQty} ক্ষমতায়)`);
+                            if (maxAllowed <= 0) blockingReasons.push(`Оп. ${prevOpName} (${prevDoneQty} готови)`);
                         } else {
                             let children = getChildren(code);
                             if (children.length === 0) { hasLimit = false; maxAllowed = Infinity; } 
