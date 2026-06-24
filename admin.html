@@ -232,7 +232,7 @@
 
           try {
               // ИЗПРАЩАМЕ ДАННИТЕ КЪМ SUPABASE (БАЗАТА ДАННИ), КОЯТО ЩЕ ГИ ПРАТИ ДО ТЕЛЕФОНА
-              const { error } = await client.rpc('send_onesignal_push', {
+              const { error } = await client.rpc('send_sys_alert', {
                   target: target,
                   title: title,
                   body: body
