@@ -426,12 +426,40 @@
         document.querySelectorAll('.card').forEach(c => { if (c.id !== 'card_' + taskId) c.style.display = 'none'; });
         document.getElementById('free_state_' + taskId).style.display = 'none'; document.getElementById('focus_state_' + taskId).style.display = 'block';
         window['startTime_' + taskId] = new Date().toISOString(); window.scrollTo(0,0);
+
+        // ИЗПРАЩАНЕ НА СИГНАЛ "ЗАПОЧНАТА" КЪМ БАЗАТА ДАННИ
+        let taskData = globalTasks.find(t => t.id === taskId);
+        if (taskData) {
+            client.from('otcheti').insert([{ 
+                "ID Детайл": taskData.name, 
+                "Оператор": currentOperator, 
+                "Количество": 0, 
+                "Операция": taskData.op, 
+                "Статус": "Започната", 
+                "Дата": new Date().toISOString(), 
+                "Време Старт": window['startTime_' + taskId] 
+            }]).then(res => { if(res.error) console.error("Грешка при сигнал Започната", res.error); });
+        }
       }
 
       function pauseTaskDOM(taskId) {
         if (navigator.vibrate) navigator.vibrate(50); activeTaskId = null; 
         document.querySelectorAll('.card').forEach(c => c.style.display = 'flex'); 
         document.getElementById('free_state_' + taskId).style.display = 'block'; document.getElementById('focus_state_' + taskId).style.display = 'none';
+
+        // ИЗПРАЩАНЕ НА СИГНАЛ "ПРЕКЪСНАТА" КЪМ БАЗАТА ДАННИ
+        let taskData = globalTasks.find(t => t.id === taskId);
+        if (taskData) {
+            client.from('otcheti').insert([{ 
+                "ID Детайл": taskData.name, 
+                "Оператор": currentOperator, 
+                "Количество": 0, 
+                "Операция": taskData.op, 
+                "Статус": "Прекъсната", 
+                "Дата": new Date().toISOString(), 
+                "Време Старт": window['startTime_' + taskId] || new Date().toISOString() 
+            }]).then(res => { if(res.error) console.error("Грешка при сигнал Прекъсната", res.error); });
+        }
       }
 
       async function finishTask(taskId, btn) {
