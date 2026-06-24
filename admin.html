@@ -81,7 +81,6 @@
                 <input type="file" id="pdfUploader" accept="application/pdf" style="display:none;" onchange="processPDF(event)">
                 <button class="btn-primary" id="pdfBtn" onclick="document.getElementById('pdfUploader').click()" style="display: none; background-color: #059669; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);">📥 Зареди от PDF</button>
                 <button class="btn-primary" onclick="window.open('index.html', '_blank')" style="background-color: #0284c7; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">📺 Монитор</button>
-                <!-- ОРАНЖЕВ БУТОН ЗА ИЗВЕСТИЯ -->
                 <button class="btn-primary" onclick="openNotificationDialog()" style="background-color: #f59e0b; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">📢 Известие</button>
                 <button class="btn-primary" id="addNewBtn" onclick="openAddModal()">➕ Добави Нов Запис</button>
             </div>
@@ -106,7 +105,6 @@
           </div>
         </div>
 
-        <!-- МОДАЛНИ ПРОЗОРЦИ -->
         <div class="modal-backdrop" id="modalBackdrop">
           <div class="modal">
             <div class="modal-header" id="modalTitle">Редакция <button onclick="closeModal()" style="border:none;background:transparent;cursor:pointer;font-size:1.2em;">✖</button></div>
@@ -140,9 +138,6 @@
 
     <script>
       const ADMIN_PIN = "0000"; 
-      
-      const ONESIGNAL_APP_ID = "2507a9cb-0d28-4952-9b7b-42e800a61613";
-      const ONESIGNAL_REST_API_KEY = "os_v2_app_eud2tsynfbevfg33iluabjqwcpbt6jfj3avuwtnw2fsr2wqo7xmwvs2lqwfozkjqiukzqfdnzjzmpg4jhyfryyukbknemdrw4a3fqfa"; 
 
       window.onload = () => {
           if (sessionStorage.getItem('is_admin_logged') !== 'true') {
@@ -204,7 +199,9 @@
         loadCurrentTableData();
       }
 
-      // ЛОГИКА ЗА ИЗПРАЩАНЕ НА ИЗВЕСТИЯТА (С РЕЗЕРВНИ МОСТОВЕ И ПРАВИЛЕН Basic ХЕДЪР)
+      // =========================================================================
+      // 🚀 НОВАТА СИГУРНА ФУНКЦИЯ (ИЗВИКВА ДИРЕКТНО СЪРВЪРА НА SUPABASE)
+      // =========================================================================
       async function openNotificationDialog() {
           const { data } = await client.from('chekiraniya').select('Имейл');
           let emails = [];
@@ -233,36 +230,23 @@
       async function sendOneSignalNotification(target, title, body) {
           Swal.fire({ title: 'Изпращане...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
-          const payload = { app_id: ONESIGNAL_APP_ID, headings: { "en": title, "bg": title }, contents: { "en": body, "bg": body }, target_channel: "push" };
-          
-          if (target === "ALL") payload.included_segments = ["Subscribed Users"];
-          else payload.include_aliases = { "external_id": [target] };
-
           try {
-              let result;
-              // ОПИТ 1: Първи мост (Използваме Basic вместо Key)
-              let response = await fetch("https://corsproxy.io/?https://onesignal.com/api/v1/notifications", { 
-                  method: "POST", 
-                  headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": "Basic " + ONESIGNAL_REST_API_KEY }, 
-                  body: JSON.stringify(payload) 
+              // ИЗПРАЩАМЕ ДАННИТЕ КЪМ SUPABASE (БАЗАТА ДАННИ), КОЯТО ЩЕ ГИ ПРАТИ ДО ТЕЛЕФОНА
+              const { error } = await client.rpc('send_onesignal_push', {
+                  target: target,
+                  title: title,
+                  body: body
               });
-              result = await response.json();
 
-              // АКО ПЪРВИЯТ МОСТ ОТРЕЖЕ ПАРОЛАТА, СЕ ВКЛЮЧВА ВТОРИЯТ (РЕЗЕРВЕН)
-              if (result.errors && JSON.stringify(result.errors).includes("Access denied")) {
-                  console.log("Първият мост отряза паролата, включвам резервния...");
-                  response = await fetch("https://api.codetabs.com/v1/proxy?quest=https://onesignal.com/api/v1/notifications", {
-                      method: "POST", 
-                      headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": "Basic " + ONESIGNAL_REST_API_KEY }, 
-                      body: JSON.stringify(payload) 
-                  });
-                  result = await response.json();
-              }
-
-              if (result.errors) throw new Error(JSON.stringify(result.errors));
+              if (error) throw error;
+              
               Swal.fire('Успех!', 'Известието беше изпратено успешно.', 'success');
-          } catch (err) { console.error(err); Swal.fire('Грешка при изпращане', err.message, 'error'); }
+          } catch (err) { 
+              console.error(err); 
+              Swal.fire('Грешка при изпращане', err.message, 'error'); 
+          }
       }
+      // =========================================================================
 
       async function processPDF(event) {
           const file = event.target.files[0]; if (!file) return; event.target.value = ''; 
