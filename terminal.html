@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>MES Терминал</title>
+    <title>MES Terminal</title>
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -65,15 +65,12 @@
   </head>
   <body>
     <div class="app-header">
-      <div style="display: flex; align-items: center; gap: 15px;">
-        <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
-          <img src="icon.png" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-right: 5px;" onerror="this.style.display='none'">
-          <div>
-            <div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div>
-            <div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div>
-          </div>
+      <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
+        <img src="icon.png" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-right: 5px;" onerror="this.style.display='none'">
+        <div>
+          <div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div>
+          <div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div>
         </div>
-        <button onclick="enableNotifications()" style="background:none; border:none; font-size:24px; cursor:pointer; padding:0;" id="notifBtn" title="Включи известия">🔕</button>
       </div>
       
       <div class="action-buttons">
@@ -125,33 +122,15 @@
       const WORKSHOP_LAT = 41.8937;
       const WORKSHOP_LNG = 23.4875;
 
-      function checkNotifStatus() {
-          if ("Notification" in window && Notification.permission === "granted") {
-              document.getElementById('notifBtn').innerText = "🔔";
-          }
-      }
-
-      function enableNotifications() {
-          if (!("Notification" in window)) {
-              Swal.fire('Грешка', 'Този браузър или телефон не поддържа известия.', 'error');
-              return;
-          }
-          Notification.requestPermission().then(permission => {
-              if (permission === "granted") {
-                  document.getElementById('notifBtn').innerText = "🔔";
-                  new Notification("Готово!", { body: "Известията са включени успешно.", icon: "icon.png" });
-              } else {
-                  Swal.fire('Внимание', 'Известията бяха отказани.', 'warning');
-              }
-          });
-      }
-
       async function initTerminal() {
           currentOperator = localStorage.getItem('mes_operator');
           currentEmail = localStorage.getItem('mes_email');
           let savedMachine = localStorage.getItem('mes_machine');
 
-          checkNotifStatus(); 
+          // Автоматично и тихо поискване на разрешение за известия при зареждане
+          if ("Notification" in window && Notification.permission === "default") {
+              Notification.requestPermission();
+          }
 
           if (!currentOperator || !currentEmail) {
               await setupProfile();
@@ -242,7 +221,7 @@
       }
 
       async function processCheckIn(actionType) {
-          if (!currentEmail) { Swal.fire('Внимание', 'Моля, въведете вашия имейл в настройките на профила (⚙️).', 'warning'); return; }
+          if (!currentEmail) { Swal.fire('Внимание', 'Моля, въведете вашия имейл in настройките на профила (⚙️).', 'warning'); return; }
 
           try {
               Swal.fire({ title: 'Проверка...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -281,6 +260,7 @@
               }]);
               if (insertErr) throw insertErr;
 
+              // АЛАРМА ПРИ ЗАКЪСНЕНИЕ (След 08:00 ч.)
               if (actionType === 'Влизане') {
                   let now = new Date();
                   if (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0)) {
@@ -353,7 +333,7 @@
                   document.getElementById('uiMachineName').innerText = (finalSelection.length > 0) ? finalSelection.join(', ') : "ВСИЧКИ";
                   loadTasks();
               }
-          } catch (err) { Swal.fire('Грешка', err.message, 'error'); }
+          } catch (err) { Swal.fire('Gрешка', err.message, 'error'); }
       }
 
       async function loadTasks(isSilent = false) {
@@ -400,21 +380,14 @@
                 if(!planGroups[planId]) planGroups[planId] = [];
                 planGroups[planId].push({ детайл_код: rootItem, текущ_родител: '', общо_необходимо_количество: targetQty });
 
-                // ЗЩИТА ОТ БЕЗКРАЕН ЦИКЪЛ (CIRCULAR BOM REFERENCE)
-                function traverseAndAdd(parentName, parentBaseQty, visited = new Set()) {
-                    if (visited.has(parentName)) {
-                        console.warn("Безкраен цикъл блокиран за:", parentName);
-                        return;
-                    }
-                    visited.add(parentName);
-
+                function traverseAndAdd(parentName, parentBaseQty) {
                     let parentScrapTotal = 0; for (let key in scrappedOps) if (key.startsWith(parentName + '_')) parentScrapTotal += scrappedOps[key];
                     let actualParentNeed = parentBaseQty + parentScrapTotal;
                     let children = globalBomData.filter(b => String(b['ID Родител']).trim() === parentName);
                     children.forEach(c => {
                         let childName = String(c['ID Компонент']).trim(); let multiplier = parseFloat(c['Количество']) || 1; let childNeededQty = actualParentNeed * multiplier;
                         planGroups[planId].push({ детайл_код: childName, текущ_родител: parentName, общо_необходимо_количество: childNeededQty });
-                        traverseAndAdd(childName, childNeededQty, new Set(visited));
+                        traverseAndAdd(childName, childNeededQty);
                     });
                 }
                 traverseAndAdd(rootItem, targetQty);
@@ -431,7 +404,7 @@
                     let routes = globalRoutesByDetail[code] || []; if(routes.length === 0) return; 
                     
                     routes.forEach((route, idx) => {
-                        let opName = String(route['Име на операция']).trim(); let opKey = code + '_' + opName;
+                        let opName = String(route['Име на operation']).trim(); let opKey = code + '_' + opName;
                         let doneQty = completedOps[opKey] || 0; let scrapQty = scrappedOps[opKey] || 0; let consumedHere = doneQty + scrapQty; 
                         let scrapStrictlyDownstream = 0;
                         for(let j = idx + 1; j < routes.length; j++) { let dKey = code + '_' + String(routes[j]['Име на операция']).trim(); scrapStrictlyDownstream += (scrappedOps[dKey] || 0); }
