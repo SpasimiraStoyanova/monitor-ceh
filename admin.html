@@ -11,49 +11,38 @@
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';</script>
     <style>
       body { font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f8fafc; margin: 0; padding: 0; color: #0f172a; }
-      
       .navbar { background-color: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; flex-wrap: wrap; gap: 15px; }
       .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.3em; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.5px; }
       .nav-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
       .tab-btn { background: transparent; border: none; padding: 10px 16px; font-weight: 700; font-size: 0.9em; color: #64748b; cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
       .tab-btn:hover { background-color: #f1f5f9; color: #0f172a; }
       .tab-btn.active { background-color: #e0e7ff; color: #4338ca; }
-
       .main-container { max-width: 98%; margin: 20px auto; padding: 0 15px; box-sizing: border-box; }
-      
       .controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 15px; flex-wrap: wrap; }
       .search-box { flex: 1; max-width: 400px; min-width: 250px; }
       .search-box input { width: 100%; padding: 12px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.95em; box-sizing: border-box; outline: none; }
       .search-box input:focus { border-color: #4338ca; box-shadow: 0 0 0 3px rgba(67, 56, 202, 0.1); }
-      
       .btn-primary { background-color: #4338ca; color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: background 0.2s; font-size: 0.95em; }
       .btn-primary:hover { background-color: #3730a3; }
-      
       .action-btn { background: transparent; border: none; padding: 6px; cursor: pointer; border-radius: 4px; font-size: 1.1em; }
       .action-btn:hover { background-color: #f1f5f9; }
       .btn-edit { color: #2563eb; }
       .btn-delete { color: #ef4444; }
-
       .layout-wrapper { display: flex; gap: 20px; align-items: flex-start; }
       .sidebar { width: 280px; flex-shrink: 0; background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; display: none; }
       .sidebar-header { background: #f8fafc; padding: 15px; font-weight: 800; color: #334155; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
       .sidebar-list { list-style: none; padding: 0; margin: 0; max-height: 70vh; overflow-y: auto; }
       .sidebar-item { padding: 12px 15px; border-bottom: 1px solid #f1f5f9; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: background 0.2s; font-weight: 600; color: #475569; font-size: 0.9em; word-break: break-all; }
       .sidebar-item:hover { background: #f1f5f9; color: #2563eb; }
-      .sidebar-item:last-child { border-bottom: none; }
-      
       .table-wrapper { flex-grow: 1; min-width: 0; }
-
       .table-container { background: white; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; overflow-x: auto; }
       table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.9em; min-width: 800px; }
       th { background-color: #f8fafc; padding: 14px 16px; font-weight: 800; color: #475569; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 0.8em; letter-spacing: 0.5px; }
       td { padding: 14px 16px; border-bottom: 1px solid #e2e8f0; color: #334155; max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       tr:hover td { background-color: #f8fafc; }
-      
       .modal-backdrop { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; box-sizing: border-box; }
       .modal { background: white; padding: 30px; border-radius: 16px; width: 100%; max-width: 550px; box-sizing: border-box; max-height: 90vh; overflow-y: auto; }
       .modal-header { font-size: 1.2em; font-weight: 800; margin-bottom: 20px; color: #1e293b; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
-      
       .dynamic-form-area { display: grid; grid-template-columns: 1fr; gap: 14px; }
       .form-group { display: flex; flex-direction: column; }
       .form-group label { font-size: 0.8em; font-weight: 700; color: #475569; margin-bottom: 6px; text-transform: uppercase; }
@@ -61,22 +50,14 @@
       .form-group input:focus { border-color: #4338ca; }
       .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 15px; }
       .btn-secondary { background-color: #f1f5f9; color: #475569; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-
       #loadingLayout { text-align: center; padding: 40px; color: #64748b; font-weight: 700; }
-
       .folder-tabs { display: flex; gap: 5px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 0px; overflow-x: auto; }
       .f-tab { background: transparent; border: none; font-weight: 800; color: #64748b; cursor: pointer; padding: 10px 15px; font-size: 0.9em; border-bottom: 3px solid transparent; white-space: nowrap; }
-      .f-tab:hover { color: #1e293b; }
       .f-tab.active { color: #4338ca; border-bottom-color: #4338ca; }
-      
       .folder-content { display: none; max-height: 450px; overflow-y: auto; }
       .folder-content.active { display: block; }
-      
       .upload-area { border: 2px dashed #cbd5e1; border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 15px; background: #f8fafc; }
       .doc-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #e2e8f0; }
-      .doc-item a { color: #2563eb; text-decoration: none; font-weight: 700; }
-      .doc-item a:hover { text-decoration: underline; }
-      
       .modal-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
       .modal-table th, .modal-table td { padding: 8px; border-bottom: 1px solid #e2e8f0; }
       .modal-table th { background: #f1f5f9; font-weight: 800; color: #475569; }
@@ -85,7 +66,6 @@
   <body>
 
     <div id="appContent" style="display: none;">
-        
         <div class="navbar">
           <div class="brand"><img src="icon.png" style="height: 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display='none'"> ИС-СИСТЕМС</div>
           <div class="nav-tabs" id="tabsContainer"></div>
@@ -100,6 +80,7 @@
                 <input type="file" id="pdfUploader" accept="application/pdf" style="display:none;" onchange="processPDF(event)">
                 <button class="btn-primary" id="pdfBtn" onclick="document.getElementById('pdfUploader').click()" style="display: none; background-color: #059669; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);">📥 Зареди от PDF</button>
                 <button class="btn-primary" onclick="window.open('index.html', '_blank')" style="background-color: #0284c7; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.3);">📺 Монитор</button>
+                <button class="btn-primary" onclick="openNotificationDialog()" style="background-color: #f59e0b; box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);">📢 Известие</button>
                 <button class="btn-primary" id="addNewBtn" onclick="openAddModal()">➕ Добави Нов Запис</button>
             </div>
           </div>
@@ -142,61 +123,39 @@
                 <div>📁 Досие: <span id="currentWorkerName" style="color: #4338ca;"></span></div>
                 <button onclick="closeFolderModal()" style="border:none;background:transparent;cursor:pointer;font-size:1.2em;color:#94a3b8;">✖</button>
             </div>
-            
             <div class="folder-tabs">
                 <button class="f-tab active" id="tabAttBtn" onclick="switchFolderTab('att')">⏱️ Присъствие</button>
                 <button class="f-tab" id="tabWorkBtn" onclick="switchFolderTab('work')">🛠️ Свършена Работа</button>
                 <button class="f-tab" id="tabDocsBtn" onclick="switchFolderTab('docs')">📑 Документи</button>
             </div>
-
-            <div id="f-att" class="folder-content active">
-                <table class="modal-table">
-                    <thead><tr><th>Дата и час</th><th>Действие</th><th>Локация</th><th>Бележка</th></tr></thead>
-                    <tbody id="workerAttList"></tbody>
-                </table>
-            </div>
-
-            <div id="f-work" class="folder-content">
-                <table class="modal-table">
-                    <thead><tr><th>Дата</th><th>Детайл</th><th>Операция</th><th>К-во</th><th>Статус</th></tr></thead>
-                    <tbody id="workerWorkList"></tbody>
-                </table>
-            </div>
-
-            <div id="f-docs" class="folder-content">
-                <div class="upload-area">
-                    <input type="file" id="docUploadInput" style="margin-bottom: 10px;">
-                    <button class="btn-primary" onclick="uploadWorkerDoc()" style="margin: 0 auto; padding: 8px 16px;">⬆️ Качи Файл</button>
-                </div>
-                <div id="workerDocsList" style="margin-top: 15px;">Зареждане на документи...</div>
-            </div>
+            <div id="f-att" class="folder-content active"><table class="modal-table"><thead><tr><th>Дата и час</th><th>Действие</th><th>Локация</th><th>Бележка</th></tr></thead><tbody id="workerAttList"></tbody></table></div>
+            <div id="f-work" class="folder-content"><table class="modal-table"><thead><tr><th>Дата</th><th>Детайл</th><th>Операция</th><th>К-во</th><th>Статус</th></tr></thead><tbody id="workerWorkList"></tbody></table></div>
+            <div id="f-docs" class="folder-content"><div class="upload-area"><input type="file" id="docUploadInput" style="margin-bottom: 10px;"><button class="btn-primary" onclick="uploadWorkerDoc()" style="margin: 0 auto; padding: 8px 16px;">⬆️ Качи Файл</button></div><div id="workerDocsList" style="margin-top: 15px;">Зареждане на документи...</div></div>
           </div>
         </div>
-        
     </div>
 
     <script>
       const ADMIN_PIN = "0000"; 
+      
+      // =========================================================
+      // ТУК СА ЗАШИТИ ТВОИТЕ КЛЮЧОВЕ ЗА ONESIGNAL!
+      // =========================================================
+      const ONESIGNAL_APP_ID = "2507a9cb-0d28-4952-9b7b-42e800a61613";
+      const ONESIGNAL_REST_API_KEY = "os_v2_app_eud2tsynfbevfg33iluabjqwcpbt6jfj3avuwtnw2fsr2wqo7xmwvs2lqwfozkjqiukzqfdnzjzmpg4jhyfryyukbknemdrw4a3fqfa"; 
+      // =========================================================
 
       window.onload = () => {
           if (sessionStorage.getItem('is_admin_logged') !== 'true') {
               Swal.fire({
-                  title: '🔐 Системен достъп',
-                  text: 'Въведете административен PIN код',
-                  input: 'password',
-                  allowOutsideClick: false,
-                  allowEscapeKey: false,
-                  showCancelButton: false,
-                  confirmButtonText: 'ВХОД',
-                  confirmButtonColor: '#4338ca'
+                  title: '🔐 Системен достъп', text: 'Въведете административен PIN код', input: 'password',
+                  allowOutsideClick: false, allowEscapeKey: false, showCancelButton: false, confirmButtonText: 'ВХОД', confirmButtonColor: '#4338ca'
               }).then((result) => {
                   if (result.value === ADMIN_PIN) {
                       sessionStorage.setItem('is_admin_logged', 'true');
                       document.getElementById('appContent').style.display = 'block';
                       initializeApp(); 
-                  } else {
-                      Swal.fire('Грешен код!', 'Опитайте отново.', 'error').then(() => location.reload());
-                  }
+                  } else { Swal.fire('Грешен код!', 'Опитайте отново.', 'error').then(() => location.reload()); }
               });
           } else {
               document.getElementById('appContent').style.display = 'block';
@@ -221,210 +180,136 @@
       };
 
       let currentTab = 'plan'; 
-      let globalRows = [];
-      let isEditMode = false;
-      let editingIndex = null;
-      let currentFolderEmail = '';
+      let globalRows = []; let isEditMode = false; let editingIndex = null; let currentFolderEmail = '';
 
-      function initializeApp() {
-          buildNavbar(); 
-          loadCurrentTableData(); 
-          runInvisibleAutoCheckout();
-      }
+      function initializeApp() { buildNavbar(); loadCurrentTableData(); runInvisibleAutoCheckout(); }
 
       function buildNavbar() {
-        const container = document.getElementById('tabsContainer');
-        container.innerHTML = '';
+        const container = document.getElementById('tabsContainer'); container.innerHTML = '';
         Object.keys(tableConfigs).forEach(key => {
-          const btn = document.createElement('button');
-          btn.className = `tab-btn ${key === currentTab ? 'active' : ''}`;
-          btn.innerText = tableConfigs[key].label;
-          btn.onclick = () => switchTab(key);
-          container.appendChild(btn);
+          const btn = document.createElement('button'); btn.className = `tab-btn ${key === currentTab ? 'active' : ''}`;
+          btn.innerText = tableConfigs[key].label; btn.onclick = () => switchTab(key); container.appendChild(btn);
         });
       }
 
       function switchTab(tabKey) {
-        currentTab = tabKey;
-        buildNavbar();
-        document.getElementById('searchInput').value = '';
-        
-        const config = tableConfigs[tabKey];
-        const addBtn = document.getElementById('addNewBtn');
-        const pdfBtn = document.getElementById('pdfBtn');
-        const sidebar = document.getElementById('personnelSidebar');
+        currentTab = tabKey; buildNavbar(); document.getElementById('searchInput').value = '';
+        const config = tableConfigs[tabKey]; const addBtn = document.getElementById('addNewBtn');
+        const pdfBtn = document.getElementById('pdfBtn'); const sidebar = document.getElementById('personnelSidebar');
         
         addBtn.innerText = `➕ Нов запис в ${config.label.replace(/[^а-яА-Я ]/g, '').trim()}`; 
         addBtn.style.display = config.readOnlyTab ? 'none' : 'flex';
-        
-        // Показваме PDF бутона само на таб Месечен План
-        if (pdfBtn) {
-            pdfBtn.style.display = (tabKey === 'plan') ? 'flex' : 'none';
-        }
+        if (pdfBtn) pdfBtn.style.display = (tabKey === 'plan') ? 'flex' : 'none';
 
-        if (tabKey === 'chekiraniya') {
-            sidebar.style.display = 'block';
-            loadPersonnelSidebar();
-        } else {
-            sidebar.style.display = 'none';
-        }
-        
+        if (tabKey === 'chekiraniya') { sidebar.style.display = 'block'; loadPersonnelSidebar(); } else { sidebar.style.display = 'none'; }
         loadCurrentTableData();
       }
 
-      // ПРЕЦИЗНИЯТ PDF РОБОТ
-      async function processPDF(event) {
-          const file = event.target.files[0];
-          if (!file) return;
-          event.target.value = ''; 
+      // ЛОГИКА ЗА ИЗПРАЩАНЕ НА ИЗВЕСТИЯТА
+      async function openNotificationDialog() {
+          const { data } = await client.from('chekiraniya').select('Имейл');
+          let emails = [];
+          if (data) emails = [...new Set(data.map(i => i['Имейл']?.trim().toLowerCase()).filter(e => e))].sort();
+          
+          let optionsHtml = '<option value="ALL">Всички работници (на смяна)</option>';
+          emails.forEach(e => optionsHtml += `<option value="${e}">${e}</option>`);
 
           const { value: formValues } = await Swal.fire({
-              title: 'Детайли за плана',
-              html: '<label style="display:block; text-align:left; font-size:14px; margin-bottom:5px;">Месец на плана:</label>' +
-                    '<input id="swal-month" class="swal2-input" value="Юни">' +
-                    '<label style="display:block; text-align:left; font-size:14px; margin-top:15px; margin-bottom:5px;">Година:</label>' +
-                    '<input id="swal-year" type="number" class="swal2-input" value="2026">',
-              focusConfirm: false,
-              showCancelButton: true,
-              confirmButtonText: 'Продължи',
-              cancelButtonText: 'Отказ',
-              preConfirm: () => [document.getElementById('swal-month').value.trim(), document.getElementById('swal-year').value.trim()]
+              title: 'Изпрати известие',
+              html: `
+                  <label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-bottom:5px;">До кого:</label>
+                  <select id="notif-target" class="swal2-input" style="margin-top:0;">${optionsHtml}</select>
+                  <label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-top:15px; margin-bottom:5px;">Заглавие:</label>
+                  <input id="notif-title" class="swal2-input" style="margin-top:0;" value="Важно съобщение">
+                  <label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-top:15px; margin-bottom:5px;">Съобщение:</label>
+                  <textarea id="notif-body" class="swal2-textarea" style="margin-top:0;" placeholder="Напишете съобщението тук..."></textarea>
+              `,
+              focusConfirm: false, showCancelButton: true, confirmButtonText: 'Изпрати 🚀', cancelButtonText: 'Отказ', confirmButtonColor: '#4338ca',
+              preConfirm: () => { return { target: document.getElementById('notif-target').value, title: document.getElementById('notif-title').value, body: document.getElementById('notif-body').value } }
           });
 
-          if (!formValues) return;
-          const [targetMonth, targetYear] = [formValues[0], parseInt(formValues[1])];
+          if (formValues && formValues.body) sendOneSignalNotification(formValues.target, formValues.title, formValues.body);
+      }
 
+      async function sendOneSignalNotification(target, title, body) {
+          if(!ONESIGNAL_REST_API_KEY || ONESIGNAL_REST_API_KEY === "ТВОЯТ_REST_API_KEY_ТУК") { Swal.fire('Грешка', 'REST API Key липсва!', 'error'); return; }
+          Swal.fire({ title: 'Изпращане...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+
+          const payload = { app_id: ONESIGNAL_APP_ID, headings: { "en": title, "bg": title }, contents: { "en": body, "bg": body }, target_channel: "push" };
+          
+          if (target === "ALL") payload.included_segments = ["Subscribed Users"];
+          else payload.include_aliases = { "external_id": [target] };
+
+          try {
+              const response = await fetch("https://onesignal.com/api/v1/notifications", { method: "POST", headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": "Basic " + ONESIGNAL_REST_API_KEY }, body: JSON.stringify(payload) });
+              const result = await response.json();
+              if (result.errors) throw new Error(JSON.stringify(result.errors));
+              Swal.fire('Успех!', 'Известието беше изпратено успешно.', 'success');
+          } catch (err) { console.error(err); Swal.fire('Грешка при изпращане', err.message, 'error'); }
+      }
+
+      async function processPDF(event) {
+          const file = event.target.files[0]; if (!file) return; event.target.value = ''; 
+          const { value: formValues } = await Swal.fire({ title: 'Детайли за плана', html: '<label style="display:block; text-align:left; font-size:14px; margin-bottom:5px;">Месец на плана:</label><input id="swal-month" class="swal2-input" value="Юни"><label style="display:block; text-align:left; font-size:14px; margin-top:15px; margin-bottom:5px;">Година:</label><input id="swal-year" type="number" class="swal2-input" value="2026">', focusConfirm: false, showCancelButton: true, confirmButtonText: 'Продължи', cancelButtonText: 'Отказ', preConfirm: () => [document.getElementById('swal-month').value.trim(), document.getElementById('swal-year').value.trim()] });
+          if (!formValues) return; const [targetMonth, targetYear] = [formValues[0], parseInt(formValues[1])];
           Swal.fire({ title: 'Прецизно сканиране...', text: 'Изолирам първите две колони на документа...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
           try {
-              const arrayBuffer = await file.arrayBuffer();
-              const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
-              let extractedPlan = [];
-              const partRegex = /^(211\d{5,6}[A-Z]?|575-\d{4,5}(?:-\d+)?#?|H25-[A-Z0-9-]+|DC25[A-Z0-9-]+)$/i;
-
+              const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise; let extractedPlan = []; const partRegex = /^(211\d{5,6}[A-Z]?|575-\d{4,5}(?:-\d+)?#?|H25-[A-Z0-9-]+|DC25[A-Z0-9-]+)$/i;
               for (let i = 1; i <= pdf.numPages; i++) {
-                  const page = await pdf.getPage(i);
-                  const content = await page.getTextContent();
-                  
-                  let validItems = content.items
-                      .filter(item => item.str.trim() !== '')
-                      .map(item => ({
-                          text: item.str.trim(),
-                          x: item.transform[4], 
-                          y: item.transform[5]  
-                      }))
-                      .filter(item => item.x < 230); // ЖЕЛЯЗНА ГРАНИЦА: Спира колона "Description"
-
-                  validItems.sort((a, b) => {
-                      if (Math.abs(b.y - a.y) > 4) return b.y - a.y; 
-                      return a.x - b.x;
-                  });
-
+                  const page = await pdf.getPage(i); const content = await page.getTextContent();
+                  let validItems = content.items.filter(item => item.str.trim() !== '').map(item => ({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] })).filter(item => item.x < 230);
+                  validItems.sort((a, b) => { if (Math.abs(b.y - a.y) > 4) return b.y - a.y; return a.x - b.x; });
                   for (let j = 0; j < validItems.length; j++) {
                       let item = validItems[j];
-                      
                       if (partRegex.test(item.text)) {
                           if (j > 0 && /^\d+$/.test(validItems[j - 1].text)) {
                               let qtyItem = validItems[j - 1];
-                              
                               if (Math.abs(qtyItem.y - item.y) < 5 && qtyItem.x < item.x) {
                                   let qty = parseInt(qtyItem.text, 10);
-                                  if (qty > 0 && qty < 10000) {
-                                      extractedPlan.push({ 
-                                          'ID Детайл': item.text.toUpperCase(), 
-                                          'Целево количество': qty,
-                                          'Месец': targetMonth,
-                                          'Година': targetYear,
-                                          'Статус': 'Активен' // ТУК Е НА БЪЛГАРСКИ
-                                      });
-                                  }
+                                  if (qty > 0 && qty < 10000) extractedPlan.push({ 'ID Детайл': item.text.toUpperCase(), 'Целево количество': qty, 'Месец': targetMonth, 'Година': targetYear, 'Статус': 'Активен' });
                               }
                           }
                       }
                   }
               }
 
-              if (extractedPlan.length === 0) {
-                  Swal.fire('Внимание', 'Не открих валидни данни в първите две колони.', 'warning');
-                  return;
-              }
-
+              if (extractedPlan.length === 0) { Swal.fire('Внимание', 'Не открих валидни данни в първите две колони.', 'warning'); return; }
               let summaryHtml = `<div style="max-height: 300px; overflow-y: auto; text-align: left; font-size: 14px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; background:#f8fafc;"><ol style="margin:0; padding-left:20px;">`;
               extractedPlan.forEach(p => summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0;"><b style="color: #16a34a; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#1e3a8a;">${p['ID Детайл']}</span></li>`);
               summaryHtml += `</ol></div>`;
 
-              const confirmRes = await Swal.fire({
-                  title: `Открити поръчки: ${extractedPlan.length} реда`,
-                  html: '<p style="font-size:13px; color:#64748b; margin-top:0;">Списъкът е подреден точно в същата последователност, както в PDF файла:</p>' + summaryHtml,
-                  icon: 'question',
-                  showCancelButton: true,
-                  confirmButtonColor: '#4338ca',
-                  cancelButtonColor: '#94a3b8',
-                  confirmButtonText: '🚀 Зареди в плана',
-                  cancelButtonText: 'Отказ'
-              });
-
-              if (confirmRes.isConfirmed) {
-                  Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                  const { error } = await client.from('plan').insert(extractedPlan);
-                  if (error) throw error;
-                  
-                  Swal.fire({ icon: 'success', title: 'Успех!', text: `Планът беше добавен в оригиналния си вид.`, timer: 2000, showConfirmButton: false });
-                  loadCurrentTableData();
-              }
-
-          } catch (err) {
-              console.error(err);
-              Swal.fire('Грешка при импорта', err.message, 'error');
-          }
+              const confirmRes = await Swal.fire({ title: `Открити поръчки: ${extractedPlan.length} реда`, html: '<p style="font-size:13px; color:#64748b; margin-top:0;">Списъкът е подреден точно в същата последователност, както в PDF файла:</p>' + summaryHtml, icon: 'question', showCancelButton: true, confirmButtonColor: '#4338ca', cancelButtonColor: '#94a3b8', confirmButtonText: '🚀 Зареди в плана', cancelButtonText: 'Отказ' });
+              if (confirmRes.isConfirmed) { Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); const { error } = await client.from('plan').insert(extractedPlan); if (error) throw error; Swal.fire({ icon: 'success', title: 'Успех!', text: `Планът беше добавен в оригиналния си вид.`, timer: 2000, showConfirmButton: false }); loadCurrentTableData(); }
+          } catch (err) { console.error(err); Swal.fire('Грешка при импорта', err.message, 'error'); }
       }
 
       async function loadPersonnelSidebar() {
-          const list = document.getElementById('sidebarList');
-          const loading = document.getElementById('sidebarLoading');
-          list.innerHTML = ''; loading.style.display = 'block';
+          const list = document.getElementById('sidebarList'); const loading = document.getElementById('sidebarLoading'); list.innerHTML = ''; loading.style.display = 'block';
           try {
-              const { data, error } = await client.from('chekiraniya').select('Имейл');
-              if (error) throw error;
-              let uniqueEmails = [...new Set(data.map(item => item['Имейл'] ? item['Имейл'].toLowerCase().trim() : ''))].filter(e => e !== '');
-              uniqueEmails.sort((a, b) => a.localeCompare(b)); 
-              loading.style.display = 'none';
+              const { data, error } = await client.from('chekiraniya').select('Имейл'); if (error) throw error;
+              let uniqueEmails = [...new Set(data.map(item => item['Имейл'] ? item['Имейл'].toLowerCase().trim() : ''))].filter(e => e !== ''); uniqueEmails.sort((a, b) => a.localeCompare(b)); loading.style.display = 'none';
               if (uniqueEmails.length === 0) { list.innerHTML = '<li style="padding:15px; color:#94a3b8; text-align:center;">Няма служители</li>'; return; }
-              uniqueEmails.forEach(email => {
-                  const li = document.createElement('li'); li.className = 'sidebar-item';
-                  li.innerHTML = `📁 <span>${email}</span>`; li.onclick = () => openWorkerFolder(email); list.appendChild(li);
-              });
+              uniqueEmails.forEach(email => { const li = document.createElement('li'); li.className = 'sidebar-item'; li.innerHTML = `📁 <span>${email}</span>`; li.onclick = () => openWorkerFolder(email); list.appendChild(li); });
           } catch (err) { loading.innerText = 'Грешка: ' + err.message; }
       }
 
       function openWorkerFolder(email) { currentFolderEmail = email; document.getElementById('currentWorkerName').innerText = email; document.getElementById('folderModalBackdrop').style.display = 'flex'; switchFolderTab('att'); }
       function closeFolderModal() { document.getElementById('folderModalBackdrop').style.display = 'none'; }
-      function switchFolderTab(tabId) {
-          ['att', 'work', 'docs'].forEach(id => { document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1) + 'Btn').classList.remove('active'); document.getElementById('f-' + id).classList.remove('active'); });
-          document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1) + 'Btn').classList.add('active'); document.getElementById('f-' + tabId).classList.add('active');
-          if (tabId === 'att') loadWorkerAttendance(); if (tabId === 'work') loadWorkerWork(); if (tabId === 'docs') loadWorkerDocs();
-      }
+      function switchFolderTab(tabId) { ['att', 'work', 'docs'].forEach(id => { document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1) + 'Btn').classList.remove('active'); document.getElementById('f-' + id).classList.remove('active'); }); document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1) + 'Btn').classList.add('active'); document.getElementById('f-' + tabId).classList.add('active'); if (tabId === 'att') loadWorkerAttendance(); if (tabId === 'work') loadWorkerWork(); if (tabId === 'docs') loadWorkerDocs(); }
 
       async function loadWorkerAttendance() {
           const tbody = document.getElementById('workerAttList'); tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Зареждане...</td></tr>';
           try {
-              const { data, error } = await client.from('chekiraniya').select('*').eq('Имейл', currentFolderEmail).order('Време', { ascending: false }).limit(100);
-              if (error) throw error;
+              const { data, error } = await client.from('chekiraniya').select('*').eq('Имейл', currentFolderEmail).order('Време', { ascending: false }).limit(100); if (error) throw error;
               if (!data || data.length === 0) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#94a3b8;">Няма записи.</td></tr>'; return; }
               let html = '';
               data.forEach(item => {
-                  let isLate = false;
-                  if (item['Действие'] === 'Влизане' && item['Време']) { let d = new Date(item['Време']); if (d.getHours() > 8 || (d.getHours() === 8 && d.getMinutes() > 0)) isLate = true; }
-                  let rowStyle = '';
-                  if (isLate || (item['Бележка'] && item['Бележка'].includes('ИЗВЪН ОБЕКТА'))) rowStyle = 'background-color: #fef2f2; border-left: 4px solid #ef4444;';
-                  else if (item['Действие'] === 'Авто излизане') rowStyle = 'background-color: #fffbeb; border-left: 4px solid #f59e0b';
-                  let timeStr = item['Време'] ? new Date(item['Време']).toLocaleString('bg-BG') : '';
-                  let actionHtml = item['Действие'];
-                  if (actionHtml === 'Влизане') actionHtml = `<span style="color:#15803d; font-weight:800;">🟢 Влизане</span>`;
-                  if (actionHtml === 'Излизане') actionHtml = `<span style="color:#b91c1c; font-weight:800;">🔴 Излизане</span>`;
-                  if (actionHtml === 'Авто излизане') actionHtml = `<span style="color:#b45309; font-weight:800;">🕒 Авто излизане</span>`;
-                  let noteHtml = item['Бележка'] || ''; if (noteHtml.includes('ИЗВЪН ОБЕКТА')) noteHtml = `⚠️ <b style="color:#dc2626;">${noteHtml}</b>`;
-                  let locHtml = item['Локация'] || '';
+                  let isLate = false; if (item['Действие'] === 'Влизане' && item['Време']) { let d = new Date(item['Време']); if (d.getHours() > 8 || (d.getHours() === 8 && d.getMinutes() > 0)) isLate = true; }
+                  let rowStyle = ''; if (isLate || (item['Бележка'] && item['Бележка'].includes('ИЗВЪН ОБЕКТА'))) rowStyle = 'background-color: #fef2f2; border-left: 4px solid #ef4444;'; else if (item['Действие'] === 'Авто излизане') rowStyle = 'background-color: #fffbeb; border-left: 4px solid #f59e0b';
+                  let timeStr = item['Време'] ? new Date(item['Време']).toLocaleString('bg-BG') : ''; let actionHtml = item['Действие'];
+                  if (actionHtml === 'Влизане') actionHtml = `<span style="color:#15803d; font-weight:800;">🟢 Влизане</span>`; if (actionHtml === 'Излизане') actionHtml = `<span style="color:#b91c1c; font-weight:800;">🔴 Излизане</span>`; if (actionHtml === 'Авто излизане') actionHtml = `<span style="color:#b45309; font-weight:800;">🕒 Авто излизане</span>`;
+                  let noteHtml = item['Бележка'] || ''; if (noteHtml.includes('ИЗВЪН ОБЕКТА')) noteHtml = `⚠️ <b style="color:#dc2626;">${noteHtml}</b>`; let locHtml = item['Локация'] || '';
                   if (locHtml.includes(',')) { let coords = locHtml.replace(/\s/g, ''); locHtml = `<a href="https://www.google.com/maps?q=${coords}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">📍 Карта</a>`; }
                   html += `<tr style="${rowStyle}"><td><b>${timeStr}</b></td><td>${actionHtml}</td><td>${locHtml}</td><td>${noteHtml}</td></tr>`;
               });
@@ -435,26 +320,16 @@
       async function loadWorkerWork() {
           const tbody = document.getElementById('workerWorkList'); tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Зареждане...</td></tr>';
           try {
-              const { data, error } = await client.from('otcheti').select('*').ilike('Оператор', `%${currentFolderEmail}%`).order('Дата', { ascending: false }).limit(50);
-              if (error) throw error;
+              const { data, error } = await client.from('otcheti').select('*').ilike('Оператор', `%${currentFolderEmail}%`).order('Дата', { ascending: false }).limit(50); if (error) throw error;
               if (!data || data.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#94a3b8;">Няма отчетена работа.</td></tr>';
-              else {
-                  let html = '';
-                  data.forEach(r => {
-                      let d = new Date(r['Дата']).toLocaleDateString('bg-BG');
-                      let statusColor = r['Статус'] === 'Брак' ? 'color:#dc2626; font-weight:800;' : 'color:#16a34a; font-weight:800;';
-                      html += `<tr><td>${d}</td><td style="font-weight:800;">${r['ID Детайл']}</td><td>${r['Операция']}</td><td style="font-weight:800;">${r['Количество']}</td><td style="${statusColor}">${r['Статус']}</td></tr>`;
-                  });
-                  tbody.innerHTML = html;
-              }
+              else { let html = ''; data.forEach(r => { let d = new Date(r['Дата']).toLocaleDateString('bg-BG'); let statusColor = r['Статус'] === 'Брак' ? 'color:#dc2626; font-weight:800;' : 'color:#16a34a; font-weight:800;'; html += `<tr><td>${d}</td><td style="font-weight:800;">${r['ID Детайл']}</td><td>${r['Операция']}</td><td style="font-weight:800;">${r['Количество']}</td><td style="${statusColor}">${r['Статус']}</td></tr>`; }); tbody.innerHTML = html; }
           } catch(err) { tbody.innerHTML = `<tr><td colspan="5" style="color:red;">Грешка: ${err.message}</td></tr>`; }
       }
 
       async function loadWorkerDocs() {
           const listDiv = document.getElementById('workerDocsList'); listDiv.innerHTML = 'Зареждане на файлове...';
           try {
-              const { data, error } = await client.storage.from('dosieta').list(currentFolderEmail);
-              if (error) throw error;
+              const { data, error } = await client.storage.from('dosieta').list(currentFolderEmail); if (error) throw error;
               if (!data || data.length === 0) { listDiv.innerHTML = '<div style="color:#94a3b8; text-align:center;">Няма качени документи.</div>'; return; }
               let html = '';
               for (let file of data) {
@@ -466,24 +341,13 @@
           } catch(err) { listDiv.innerHTML = `<div style="color:red;">Липсва Storage bucket "dosieta" (${err.message})</div>`; }
       }
 
-      async function uploadWorkerDoc() {
-          const fileInput = document.getElementById('docUploadInput'); const file = fileInput.files[0];
-          if (!file) { Swal.fire('Внимание', 'Моля, изберете файл.', 'warning'); return; }
-          Swal.fire({ title: 'Качване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-          try {
-              const { error } = await client.storage.from('dosieta').upload(`${currentFolderEmail}/${file.name}`, file, { upsert: true });
-              if (error) throw error; Swal.fire({ icon: 'success', title: 'Качен!', timer: 1000, showConfirmButton: false });
-              fileInput.value = ''; loadWorkerDocs();
-          } catch(err) { Swal.fire('Грешка', err.message, 'error'); }
-      }
-
+      async function uploadWorkerDoc() { const fileInput = document.getElementById('docUploadInput'); const file = fileInput.files[0]; if (!file) { Swal.fire('Внимание', 'Моля, изберете файл.', 'warning'); return; } Swal.fire({ title: 'Качване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); try { const { error } = await client.storage.from('dosieta').upload(`${currentFolderEmail}/${file.name}`, file, { upsert: true }); if (error) throw error; Swal.fire({ icon: 'success', title: 'Качен!', timer: 1000, showConfirmButton: false }); fileInput.value = ''; loadWorkerDocs(); } catch(err) { Swal.fire('Грешка', err.message, 'error'); } }
       async function deleteWorkerDoc(fileName) { if (!confirm(`Изтриване на ${fileName}?`)) return; try { const { error } = await client.storage.from('dosieta').remove([`${currentFolderEmail}/${fileName}`]); if (error) throw error; loadWorkerDocs(); } catch(err) { alert('Грешка: ' + err.message); } }
 
       async function runInvisibleAutoCheckout() {
           try {
               const { data, error } = await client.from('chekiraniya').select('*').order('Време', { ascending: true }); if(error) return;
-              let userState = {}; let userLastTime = {}; data.forEach(r => { userState[r['Имейл']] = r['Действие']; userLastTime[r['Имейл']] = r['Време']; });
-              let toCheckout = []; let now = new Date();
+              let userState = {}; let userLastTime = {}; data.forEach(r => { userState[r['Имейл']] = r['Действие']; userLastTime[r['Имейл']] = r['Време']; }); let toCheckout = []; let now = new Date();
               for(let email in userState) {
                   if(userState[email] === 'Влизане') {
                       let loginTime = new Date(userLastTime[email]);
@@ -498,8 +362,7 @@
       }
 
       async function loadCurrentTableData() {
-        const config = tableConfigs[currentTab];
-        document.getElementById('loadingLayout').style.display = 'block'; document.getElementById('mainTable').style.display = 'none';
+        const config = tableConfigs[currentTab]; document.getElementById('loadingLayout').style.display = 'block'; document.getElementById('mainTable').style.display = 'none';
         try {
             let query = client.from(config.table).select('*').limit(10000);
             if (currentTab === 'otcheti') query = query.order('Дата', { ascending: false });
@@ -510,30 +373,23 @@
       }
 
       function renderDynamicTable(itemsToRender = null) {
-        const items = itemsToRender || globalRows; const config = tableConfigs[currentTab];
-        document.getElementById('loadingLayout').style.display = 'none';
+        const items = itemsToRender || globalRows; const config = tableConfigs[currentTab]; document.getElementById('loadingLayout').style.display = 'none';
         const table = document.getElementById('mainTable'); const thead = document.getElementById('tableHead'); const tbody = document.getElementById('tableBody');
-        thead.innerHTML = ''; tbody.innerHTML = '';
-
-        const headerRow = document.createElement('tr');
+        thead.innerHTML = ''; tbody.innerHTML = ''; const headerRow = document.createElement('tr');
         config.fields.forEach(f => { if (f.hideOnAdd) return; const th = document.createElement('th'); th.innerText = f.label || f.name; headerRow.appendChild(th); });
         if (!config.readOnlyTab) { const thActions = document.createElement('th'); thActions.innerText = 'Действия'; thActions.style.textAlign = 'center'; headerRow.appendChild(thActions); }
         thead.appendChild(headerRow);
-
         if (items.length === 0) { tbody.innerHTML = `<tr><td colspan="${config.fields.length + (config.readOnlyTab ? 0 : 1)}" style="text-align:center; padding:40px;">Няма записи.</td></tr>`; table.style.display = 'table'; return; }
 
         items.forEach((item) => {
           const row = document.createElement('tr'); const trueIndex = globalRows.indexOf(item);
-          
           if (currentTab === 'chekiraniya') {
              let isLate = false; if (item['Действие'] === 'Влизане' && item['Време']) { let d = new Date(item['Време']); if (d.getHours() > 8 || (d.getHours() === 8 && d.getMinutes() > 0)) isLate = true; }
              if (isLate || (item['Бележка'] && item['Бележка'].includes('ИЗВЪН ОБЕКТА'))) { row.style.backgroundColor = '#fef2f2'; row.style.borderLeft = '5px solid #ef4444'; }
              else if (item['Действие'] === 'Авто излизане') { row.style.backgroundColor = '#fffbeb'; row.style.borderLeft = '5px solid #f59e0b'; }
           }
-
           config.fields.forEach(f => {
             if (f.hideOnAdd) return; const td = document.createElement('td'); let val = item[f.name] !== undefined && item[f.name] !== null ? item[f.name] : '';
-            
             if (currentTab === 'chekiraniya' && f.name === 'Време' && val) { try { td.innerHTML = `<b>${new Date(val).toLocaleString('bg-BG')}</b>`; } catch(e) { td.innerText = val; } row.appendChild(td); return; }
             if (currentTab === 'chekiraniya' && f.name === 'Действие') {
                 if (val === 'Влизане') td.innerHTML = `<span style="background:#dcfce7; color:#15803d; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.9em;">🟢 ${val}</span>`;
@@ -541,20 +397,11 @@
                 else if (val === 'Авто излизане') td.innerHTML = `<span style="background:#fef3c7; color:#b45309; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.9em;">🕒 ${val}</span>`;
                 else td.innerText = val; row.appendChild(td); return;
             }
-            if (currentTab === 'chekiraniya' && f.name === 'Локация' && val && val.includes(',')) {
-                let coords = val.replace(/\s/g, ''); td.innerHTML = `<a href="https://www.google.com/maps?q=${coords}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">📍 Карта</a>`;
-                row.appendChild(td); return;
-            }
+            if (currentTab === 'chekiraniya' && f.name === 'Локация' && val && val.includes(',')) { let coords = val.replace(/\s/g, ''); td.innerHTML = `<a href="https://www.google.com/maps?q=${coords}" target="_blank" style="color:#2563eb; font-weight:bold; text-decoration:none;">📍 Карта</a>`; row.appendChild(td); return; }
             if (currentTab === 'chekiraniya' && f.name === 'Бележка' && val.includes('ИЗВЪН ОБЕКТА')) { td.innerHTML = `⚠️ <b style="color:#dc2626;">${val}</b>`; row.appendChild(td); return; }
-            
-            if (typeof val === 'string' && val.startsWith('http')) {
-                td.innerHTML = `<a href="${val}" target="_blank" style="background:#e0e7ff; color:#4338ca; padding:5px 12px; border-radius:6px; font-weight:800; text-decoration:none; font-size:0.85em; display:inline-block;">🔗 Отвори</a>`;
-                row.appendChild(td); return;
-            }
-
+            if (typeof val === 'string' && val.startsWith('http')) { td.innerHTML = `<a href="${val}" target="_blank" style="background:#e0e7ff; color:#4338ca; padding:5px 12px; border-radius:6px; font-weight:800; text-decoration:none; font-size:0.85em; display:inline-block;">🔗 Отвори</a>`; row.appendChild(td); return; }
             td.innerText = val; row.appendChild(td);
           });
-
           if (!config.readOnlyTab) {
               const tdActions = document.createElement('td'); tdActions.style.textAlign = 'center';
               tdActions.innerHTML = `<button class="action-btn btn-edit" onclick="openEditModal(${trueIndex})">✏️</button><button class="action-btn btn-delete" onclick="deleteItem(${trueIndex})">🗑️</button>`;
@@ -566,22 +413,12 @@
       }
 
       function filterTable() { const q = document.getElementById('searchInput').value.toLowerCase().trim(); if(!q) { renderDynamicTable(); return; } const f = globalRows.filter(r => Object.values(r).some(v => String(v).toLowerCase().includes(q))); renderDynamicTable(f); }
-      
       function buildForm(data = null) {
         const area = document.getElementById('formFieldsArea'); area.innerHTML = ''; const fields = tableConfigs[currentTab].fields;
         fields.forEach(f => {
-          if (f.hideOnAdd && !isEditMode) return; const group = document.createElement('div'); group.className = 'form-group';
-          const label = document.createElement('label'); label.innerText = f.label || f.name; group.appendChild(label);
-          let input;
-          if (f.type === 'select') {
-            input = document.createElement('select');
-            f.options.forEach(opt => { const option = document.createElement('option'); option.value = opt; option.innerText = opt; input.appendChild(option); });
-            if (data && data[f.name]) input.value = data[f.name];
-          } else {
-            input = document.createElement('input'); input.type = f.type === 'number' ? 'number' : 'text'; if (f.type === 'number') input.step = 'any';
-            if (data && data[f.name] !== undefined && data[f.name] !== null) input.value = data[f.name];
-            else if (f.def !== undefined) input.value = typeof f.def === 'function' ? f.def() : f.def;
-          }
+          if (f.hideOnAdd && !isEditMode) return; const group = document.createElement('div'); group.className = 'form-group'; const label = document.createElement('label'); label.innerText = f.label || f.name; group.appendChild(label); let input;
+          if (f.type === 'select') { input = document.createElement('select'); f.options.forEach(opt => { const option = document.createElement('option'); option.value = opt; option.innerText = opt; input.appendChild(option); }); if (data && data[f.name]) input.value = data[f.name]; } 
+          else { input = document.createElement('input'); input.type = f.type === 'number' ? 'number' : 'text'; if (f.type === 'number') input.step = 'any'; if (data && data[f.name] !== undefined && data[f.name] !== null) input.value = data[f.name]; else if (f.def !== undefined) input.value = typeof f.def === 'function' ? f.def() : f.def; }
           input.id = 'inp_' + f.name; if (f.required) input.required = true;
           if (f.readonly || (isEditMode && f.readonlyOnEdit)) { input.readOnly = true; input.style.backgroundColor = '#f1f5f9'; input.style.color = '#64748b'; input.style.cursor = 'not-allowed'; if (f.type === 'select') input.disabled = true; }
           group.appendChild(input); area.appendChild(group);
@@ -591,20 +428,13 @@
       function openAddModal() { isEditMode = false; editingIndex = null; document.getElementById('modalTitle').innerHTML = '➕ Добавяне: ' + tableConfigs[currentTab].label.replace(/[^а-яА-Я ]/g, '').trim(); buildForm(); document.getElementById('modalBackdrop').style.display = 'flex'; }
       function openEditModal(index) { isEditMode = true; editingIndex = index; document.getElementById('modalTitle').innerHTML = '✏️ Редакция: ' + tableConfigs[currentTab].label.replace(/[^а-яА-Я ]/g, '').trim(); buildForm(globalRows[index]); document.getElementById('modalBackdrop').style.display = 'flex'; }
       function closeModal() { document.getElementById('modalBackdrop').style.display = 'none'; }
-
+      
       async function saveForm(e) {
-        e.preventDefault(); const config = tableConfigs[currentTab]; const btn = e.target.querySelector('button[type="submit"]'); btn.innerText = 'Записване...'; btn.disabled = true;
-        let payload = {};
+        e.preventDefault(); const config = tableConfigs[currentTab]; const btn = e.target.querySelector('button[type="submit"]'); btn.innerText = 'Записване...'; btn.disabled = true; let payload = {};
         config.fields.forEach(f => { const el = document.getElementById('inp_' + f.name); if (el && !f.readonly && !(isEditMode && f.readonlyOnEdit)) { let val = el.value; if (f.type === 'number') val = parseFloat(val) || 0; payload[f.name] = val; } });
         try {
-          if (isEditMode) {
-             const row = globalRows[editingIndex]; const keyVal = row[config.key];
-             const { error } = await client.from(config.table).update(payload).eq(config.key, keyVal); if (error) throw error;
-             Swal.fire({icon: 'success', title: 'Успешно запазено!', timer: 1000, showConfirmButton: false});
-          } else {
-             const { error } = await client.from(config.table).insert([payload]); if (error) throw error;
-             Swal.fire({icon: 'success', title: 'Успешно добавено!', timer: 1000, showConfirmButton: false});
-          }
+          if (isEditMode) { const row = globalRows[editingIndex]; const keyVal = row[config.key]; const { error } = await client.from(config.table).update(payload).eq(config.key, keyVal); if (error) throw error; Swal.fire({icon: 'success', title: 'Успешно запазено!', timer: 1000, showConfirmButton: false}); } 
+          else { const { error } = await client.from(config.table).insert([payload]); if (error) throw error; Swal.fire({icon: 'success', title: 'Успешно добавено!', timer: 1000, showConfirmButton: false}); }
           closeModal(); loadCurrentTableData();
         } catch (err) { Swal.fire('Грешка', err.message, 'error'); } finally { btn.innerText = 'Запази запис'; btn.disabled = false; }
       }
@@ -612,13 +442,7 @@
       async function deleteItem(index) {
         const config = tableConfigs[currentTab]; const row = globalRows[index]; const keyVal = row[config.key];
         const res = await Swal.fire({ title: 'Сигурни ли сте?', text: "Записът ще бъде изтрит безвъзвратно!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Да, изтрий!', cancelButtonText: 'Отказ' });
-        if (res.isConfirmed) {
-           try {
-             Swal.fire({title: 'Изтриване...', allowOutsideClick: false, didOpen: () => Swal.showLoading()});
-             const { error } = await client.from(config.table).delete().eq(config.key, keyVal); if (error) throw error;
-             Swal.fire({icon: 'success', title: 'Изтрито!', timer: 1000, showConfirmButton: false}); loadCurrentTableData();
-           } catch(err) { Swal.fire('Грешка', err.message, 'error'); }
-        }
+        if (res.isConfirmed) { try { Swal.fire({title: 'Изтриване...', allowOutsideClick: false, didOpen: () => Swal.showLoading()}); const { error } = await client.from(config.table).delete().eq(config.key, keyVal); if (error) throw error; Swal.fire({icon: 'success', title: 'Изтрито!', timer: 1000, showConfirmButton: false}); loadCurrentTableData(); } catch(err) { Swal.fire('Грешка', err.message, 'error'); } }
       }
     </script>
   </body>
