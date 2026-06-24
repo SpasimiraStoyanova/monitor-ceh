@@ -260,15 +260,33 @@
               }]);
               if (insertErr) throw insertErr;
 
-              // АЛАРМА ПРИ ЗАКЪСНЕНИЕ (След 08:00 ч.)
+             // АЛАРМА ПРИ ЗАКЪСНЕНИЕ (След 07:59 ч.)
               if (actionType === 'Влизане') {
                   let now = new Date();
-                  if (now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 0)) {
+                  // Ако часът е 08:00 или по-късно
+                  if (now.getHours() >= 8) {
+                      
+                      // 1. Системно текстово известие
                       if ("Notification" in window && Notification.permission === "granted") {
                           new Notification("⚠️ Закъснение", {
                               body: `Регистриран вход в ${now.toLocaleTimeString('bg-BG')}`,
                               icon: "icon.png"
                           });
+                      }
+
+                      // 2. Телефонът "говори" на български
+                      if ('speechSynthesis' in window) {
+                          // Изчистваме, ако случайно говори нещо друго в момента
+                          window.speechSynthesis.cancel(); 
+                          
+                          // Създаваме гласовото съобщение
+                          let msg = new SpeechSynthesisUtterance("Регистрирано е закъснение.");
+                          msg.lang = 'bg-BG'; // Български език
+                          msg.rate = 1.0;     // Нормална скорост на говорене
+                          msg.pitch = 1.1;    // Леко по-висок тон, за да се чува по-ясно в цеха
+                          
+                          // Изговаряме го
+                          window.speechSynthesis.speak(msg);
                       }
                   }
               }
