@@ -310,8 +310,8 @@
           } catch (err) { console.error(err); Swal.fire('Грешка при изпращане', err.message, 'error'); }
       }
 
-      // ==========================================================
-      // НОВИЯТ УМЕН СКЕНЕР ЗА PDF (ГЕОГРАФСКИ КООРДИНАТИ)
+     // ==========================================================
+      // НОВИЯТ УМЕН СКЕНЕР ЗА PDF (ГЕОГРАФСКИ КООРДИНАТИ) - ПОПРАВЕН
       // ==========================================================
       async function processPDF(event) {
           const file = event.target.files[0]; if (!file) return; event.target.value = ''; 
@@ -321,8 +321,8 @@
           Swal.fire({ title: 'Прецизно сканиране...', text: 'Сверяване с Номенклатура и изолиране на колоните...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
           try {
-              // 1. ИЗТЕГЛЯНЕ НА НОМЕНКЛАТУРАТА ЗА СВЕРЯВАНЕ
-              const { data: nomData, error: nomErr } = await client.from('Номенклатура').select('ID Детайл, Вътрешно име');
+              // 1. ИЗТЕГЛЯНЕ НА НОМЕНКЛАТУРАТА ЗА СВЕРЯВАНЕ (ПОПРАВЕНА ЗАЯВКА С '*')
+              const { data: nomData, error: nomErr } = await client.from('Номенклатура').select('*');
               if (nomErr) throw nomErr;
               let nomSet = new Set();
               if (nomData) {
