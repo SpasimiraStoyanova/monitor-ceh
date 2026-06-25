@@ -232,7 +232,6 @@
                 return;
             }
 
-            // Точка 3: Сортиране на плановете
             plansData.sort((a, b) => a.id - b.id);
 
             let nomMap = {};
@@ -249,12 +248,10 @@
                 });
             }
 
-            // Точка 1: Улавяне на статус "Започната"
             let completedOps = {};
             let opStatusMap = {}; 
             
             if (reportsRes.data) {
-                // Сортираме по време, за да запазим последния статус
                 let sortedReports = reportsRes.data.sort((a, b) => new Date(a['Време Старт'] || a['Дата']) - new Date(b['Време Старт'] || b['Дата']));
                 sortedReports.forEach(r => {
                     let key = String(r['ID Детайл']).trim() + '_' + String(r['Операция']).trim();
@@ -264,7 +261,6 @@
                         completedOps[key] = (completedOps[key] || 0) + qty;
                         opStatusMap[key] = 'Отчетено';
                     } else if (r['Статус'] !== 'Брак') {
-                        // Записва "Започната", "Прекъсната" и т.н.
                         opStatusMap[key] = r['Статус']; 
                     }
                 });
@@ -284,7 +280,6 @@
 
             let bomChildrenMap = {};
             if (bomRes.data) {
-                // Точка 3: Сортиране на децата по азбучен ред
                 let bomDataSorted = bomRes.data.sort((a, b) => String(a['ID Компонент']).localeCompare(String(b['ID Компонент'])));
                 bomDataSorted.forEach(b => {
                     let p = String(b['ID Родител']).trim().toLowerCase();
@@ -338,7 +333,6 @@
                         part_type: nomEntry['Тип'] || ''
                     });
 
-                    // Точка 3: Децата вече са сортирани в bomChildrenMap
                     children.forEach(c => {
                         let childName = String(c['ID Компонент']).trim();
                         let multiplier = parseFloat(c['Количество']) || 1;
@@ -404,11 +398,10 @@
                         let doneQty = completedOps[opKey] || 0;
                         let latestStatus = opStatusMap[opKey];
                         
-                        // Точка 1: Определяне на точния статус за синьото
                         let opState = 'gray';
                         if (doneQty >= n.planQty) opState = 'green';
-                        else if (doneQty > 0) opState = 'blue'; // Има бройки (active)
-                        else if (latestStatus === 'Започната') opState = 'blue_0'; // Поета, но 0 бройки (active_0)
+                        else if (doneQty > 0) opState = 'blue'; 
+                        else if (latestStatus === 'Започната') opState = 'blue_0'; 
                         
                         n.operations.push({ name: opName, completed: doneQty, state: opState });
                     });
@@ -609,7 +602,6 @@
 
                 let children = childMap[node.id] || [];
                 
-                // Точка 2: Оценяваме ПОСЛЕДНАТА операция на децата
                 let allChildrenDone = true;
                 let anyChildLastOpHasPieces = false;
                 let anyChildLastOpStarted = false;
@@ -625,14 +617,14 @@
                     anyChildLastOpHasPieces = children.some(cId => {
                         let chNode = allNodesMap[cId];
                         if(!chNode || !chNode.operations || chNode.operations.length === 0) return false;
-                        let lastOp = chNode.operations[chNode.operations.length - 1]; // Гледаме само последната!
+                        let lastOp = chNode.operations[chNode.operations.length - 1]; 
                         return lastOp.completed > 0 || lastOp.state === 'green';
                     });
 
                     anyChildLastOpStarted = children.some(cId => {
                         let chNode = allNodesMap[cId];
                         if(!chNode || !chNode.operations || chNode.operations.length === 0) return false;
-                        let lastOp = chNode.operations[chNode.operations.length - 1]; // Гледаме само последната!
+                        let lastOp = chNode.operations[chNode.operations.length - 1]; 
                         return lastOp.state === 'blue' || lastOp.state === 'blue_0' || lastOp.completed > 0 || lastOp.state === 'green';
                     });
                 }
@@ -641,8 +633,9 @@
                     let len = node.operations.length;
                     let allOpsDone = node.operations.every(o => o.state === 'green' || o.completed >= node.planQty);
 
+                    // ПРЕМАХНАТИ СТРЕЛКИТЕ ОТ САМИТЕ ФУНКЦИИ
                     const formatPast = (op) => `<span class="op-text op-past">${op.name} | ${op.completed}/${node.planQty}</span>`;
-                    const formatFuture = (op) => `<span class="op-text op-future"><span class="arr">➔</span> ${op.name} | 0/${node.planQty}</span>`;
+                    const formatFuture = (op) => `<span class="op-text op-future">${op.name} | 0/${node.planQty}</span>`;
                     const formatActive = (op) => `<span class="op-text op-focus active">${op.name} | ${op.completed}/${node.planQty}</span>`;
                     const formatWaiting = (op) => `<span class="op-text op-focus waiting">${op.name} | ${op.completed}/${node.planQty}</span>`;
                     const formatFinishedAll = (op) => `<span class="op-text op-finished-all">${op.name} | ${op.completed}/${node.planQty}</span>`;
@@ -671,26 +664,35 @@
                             if (op.state === 'green' || op.completed >= node.planQty) {
                                 state = 'past';
                             } else if (op.state === 'blue' || op.completed > 0) {
-                                state = 'active'; // Има бройки (Синьо)
+                                state = 'active'; 
                                 hasActive = true;
                             } else if (op.state === 'blue_0') {
-                                state = 'active_0'; // Поета е, но няма бройки (Синьо)
+                                state = 'active_0'; 
                                 hasActive = true;
                             } else {
                                 if (i === 0) {
                                     if (children.length === 0) {
-                                        state = 'waiting'; // Листо -> Готово за старт
+                                        state = 'waiting'; 
                                     } else {
                                         if (allChildrenDone) state = 'waiting';
-                                        else if (anyChildLastOpHasPieces) state = 'waiting'; // Децата имат готови бройки от последната си операция
-                                        else if (anyChildLastOpStarted) state = 'future'; // Децата са ПОЕЛИ последната си операция
+                                        else if (anyChildLastOpHasPieces) state = 'waiting'; 
+                                        else if (anyChildLastOpStarted) state = 'future'; 
                                         else state = 'hidden'; 
                                     }
                                 } else {
                                     let prev = stateMachine[i - 1];
-                                    if (prev === 'past' || prev === 'active') state = 'waiting';
-                                    else if (prev === 'active_0') state = 'future';
-                                    else state = 'hidden';
+                                    
+                                    // НОВАТА ЖЕЛЯЗНА ЛОГИКА ЗА БЪДЕЩЕТО:
+                                    if (prev === 'past' || prev === 'active') {
+                                        // Ако предната е напълно готова ИЛИ има бройки -> ТАЗИ Е ГОТОВА ЗА ПОЕМАНЕ (Голямо сиво)
+                                        state = 'waiting';
+                                    } else if (prev === 'active_0') {
+                                        // Ако предната е само поета (без бройки) -> ТАЗИ Е В БЪДЕЩЕТО (Малко сиво)
+                                        state = 'future';
+                                    } else {
+                                        // В противен случай (ако предната е waiting, future или hidden) -> ТАЗИ Е СКРИТА
+                                        state = 'hidden';
+                                    }
                                 }
                             }
                             stateMachine.push(state);
@@ -713,6 +715,7 @@
                                 if (currentPastIndex < pastCount) {
                                     pastHiddenArr.push(formatPast(op)); 
                                 } else {
+                                    if (visibleOpsHtml !== '') visibleOpsHtml += ' <span class="arr">➔</span> ';
                                     visibleOpsHtml += formatPast(op); 
                                 }
                             } else if (state === 'active' || state === 'active_0') {
@@ -722,12 +725,10 @@
                                 if (visibleOpsHtml !== '') visibleOpsHtml += ' <span class="arr">➔</span> ';
                                 visibleOpsHtml += formatWaiting(op);
                             } else if (state === 'future') {
-                                if (visibleOpsHtml === '') {
-                                    visibleOpsHtml += formatFuture(op);
-                                } else {
-                                    visibleOpsHtml += ' ' + formatFuture(op);
-                                }
+                                if (visibleOpsHtml !== '') visibleOpsHtml += ' <span class="arr">➔</span> ';
+                                visibleOpsHtml += formatFuture(op);
                             }
+                            // Ако state === 'hidden', просто я игнорираме. Няма три точки, няма скрити масиви!
                         }
 
                         let opsHTMLContent = '';
@@ -738,7 +739,6 @@
                         
                         opsHTMLContent += visibleOpsHtml;
 
-                        // Ако няма нищо за рисуване (всичко е скрито), div-ът остава празен и скрива само операциите!
                         if (opsHTMLContent.trim() !== '') {
                             opsHTML = `<div class="vsm-ops">${opsHTMLContent}</div>`;
                         }
