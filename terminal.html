@@ -14,8 +14,8 @@
         await OneSignal.init({
           appId: "2507a9cb-0d28-4952-9b7b-42e800a61613",
           serviceWorkerParam: { scope: "/monitor-ceh/" },
-          serviceWorkerPath: "/monitor-ceh/OneSignalSDKWorker.js",
-          notifyButton: { enable: true, position: 'bottom-left', colors: { 'circle.background': '#2563eb' } }
+          serviceWorkerPath: "/monitor-ceh/OneSignalSDKWorker.js"
+          // Камбанката е премахната умишлено!
         });
       });
     </script>
@@ -128,7 +128,7 @@
           const { value: formValues } = await Swal.fire({
               title: 'Профил Работник',
               html:
-                  '<div style="background: #e0e7ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;"><button type="button" onclick="triggerPushPrompt()" style="background: #4338ca; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width:100%; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">🔔 Поискай известия (Ръчно)</button><p style="font-size: 11px; color: #475569; margin: 5px 0 0 0; text-align: center;">Или използвайте синята камбанка долу вляво.</p></div>' +
+                  '<div style="background: #e0e7ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;"><button type="button" onclick="triggerPushPrompt()" style="background: #4338ca; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width:100%; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">🔔 Поискай известия (Ръчно)</button><p style="font-size: 11px; color: #475569; margin: 5px 0 0 0; text-align: center;">Ако все още не сте се абонирали.</p></div>' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-bottom:5px; color:#475569;">Име и Фамилия</label><input id="swal-name" class="swal2-input" style="margin-top:0;" value="' + (currentOperator || '') + '">' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-top:15px; margin-bottom:5px; color:#475569;">Личен Имейл</label><input id="swal-email" class="swal2-input" type="email" style="margin-top:0;" value="' + (currentEmail || '') + '">' +
                   '<div style="margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: center; gap: 10px;"><button type="button" onclick="window.location.href=\'admin.html\'" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">🔒 Админ</button><button type="button" onclick="window.location.href=\'index.html\'" style="background: transparent; border: 1px solid #bae6fd; color: #0284c7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📺 Монитор</button></div>',
@@ -287,7 +287,6 @@
 
             globalTasks = [];
             for(let planId in planGroups) {
-                // СУМИРАМЕ БРОЙКИТЕ (ЗА ДА НЯМА ПОВТАРЯЩИ СЕ КАРТИ)
                 let aggregatedBom = {};
                 planGroups[planId].forEach(node => {
                     let code = node.детайл_код;
@@ -345,7 +344,6 @@
                         if (maxAllowed < 0) maxAllowed = 0; let isBlocked = hasLimit && maxAllowed <= 0; let machineName = route['Машина'] || '';
                         if (currentMachine && currentMachine.trim() !== "") { let selectedMachines = currentMachine.split(',').map(m => m.toLowerCase().trim()); let match = selectedMachines.some(m => machineName.toLowerCase().includes(m)); if (!match) return; }
 
-                        // ПРЕМАХВАМЕ ПОВТАРЯЩИТЕ СЕ ПРИЧИНИ В ЧЕРВЕНОТО ПОЛЕ
                         blockingReasons = [...new Set(blockingReasons)];
 
                         let defaultInput = (effectivePlanQty - doneQty > 0) ? (effectivePlanQty - doneQty) : 0;
@@ -427,7 +425,6 @@
         document.getElementById('free_state_' + taskId).style.display = 'none'; document.getElementById('focus_state_' + taskId).style.display = 'block';
         window['startTime_' + taskId] = new Date().toISOString(); window.scrollTo(0,0);
 
-        // ИЗПРАЩАНЕ НА СИГНАЛ "ЗАПОЧНАТА" КЪМ БАЗАТА ДАННИ
         let taskData = globalTasks.find(t => t.id === taskId);
         if (taskData) {
             client.from('otcheti').insert([{ 
@@ -447,7 +444,6 @@
         document.querySelectorAll('.card').forEach(c => c.style.display = 'flex'); 
         document.getElementById('free_state_' + taskId).style.display = 'block'; document.getElementById('focus_state_' + taskId).style.display = 'none';
 
-        // ИЗПРАЩАНЕ НА СИГНАЛ "ПРЕКЪСНАТА" КЪМ БАЗАТА ДАННИ
         let taskData = globalTasks.find(t => t.id === taskId);
         if (taskData) {
             client.from('otcheti').insert([{ 
