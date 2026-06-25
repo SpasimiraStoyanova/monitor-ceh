@@ -122,7 +122,39 @@
 
       function setTaskFilter(filterType) { currentTaskFilter = filterType; document.querySelectorAll('.t-filter-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('filter_' + filterType).classList.add('active'); renderTasks(globalTasks); }
 
-      function triggerPushPrompt() { OneSignalDeferred.push(function(OneSignal) { OneSignal.Notifications.requestPermission(); }); }
+      function triggerPushPrompt() {
+          // Проверяваме какво е текущото състояние на браузъра
+          if (Notification.permission === 'granted') {
+              Swal.fire({
+                  icon: 'info',
+                  title: 'Вече сте абонирани!',
+                  text: 'Този телефон вече има разрешение да получава известия.',
+                  confirmButtonColor: '#2563eb'
+              });
+              return;
+          }
+          
+          if (Notification.permission === 'denied') {
+              Swal.fire({
+                  icon: 'warning',
+                  title: 'Известията са блокирани',
+                  text: 'Браузърът е блокирал известията. За да ги пуснете, натиснете катинарчето (🔒) или иконата за настройки горе до адреса (is-systems...) и позволете известията ръчно.',
+                  confirmButtonColor: '#e74c3c'
+              });
+              return;
+          }
+
+          // Ако не са нито разрешени, нито блокирани, викаме OneSignal
+          OneSignalDeferred.push(async function(OneSignal) {
+              try {
+                  // Първо затваряме профилния прозорец, за да не пречи на системното съобщение
+                  Swal.close(); 
+                  await OneSignal.Notifications.requestPermission();
+              } catch(e) {
+                  console.error("Грешка при известията:", e);
+              }
+          });
+      }
 
       async function setupProfile() {
           const { value: formValues } = await Swal.fire({
