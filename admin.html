@@ -305,7 +305,6 @@
           Swal.fire({ title: 'Изпращане...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
           
           try {
-              // 1. Опаковаме текста безопасно, за да може да пътува през линка
               let safeTitle = encodeURIComponent(title);
               let safeBody = encodeURIComponent(body);
 
@@ -313,7 +312,6 @@
                   app_id: "2507a9cb-0d28-4952-9b7b-42e800a61613",
                   headings: { "en": title, "bg": title },
                   contents: { "en": body, "bg": body },
-                  // 2. Залепяме заглавието и съобщението в самия линк
                   url: `https://is-systems.github.io/monitor-ceh/terminal.html?sysTitle=${safeTitle}&sysMsg=${safeBody}`, 
                   priority: 10 
               };
@@ -340,6 +338,15 @@
                   const errData = await response.json();
                   throw new Error("Грешка от сървъра: " + JSON.stringify(errData.errors));
               }
+
+              // НОВО: Записваме съобщението в базата данни за историята!
+              await client.from('chekiraniya').insert([{
+                  "Имейл": "СИСТЕМА",
+                  "Действие": "Съобщение",
+                  "Време": new Date().toISOString(),
+                  "Локация": target,
+                  "Бележка": title + "|||" + body
+              }]);
 
               Swal.fire('Успех!', 'Известието беше изпратено успешно.', 'success');
           } catch (err) { 
