@@ -313,17 +313,15 @@
       }
 
       async function loadTasks(isSilent = false) {
-        // НОВА ЛОГИКА ЗА СКРИВАНЕ/ПОКАЗВАНЕ НА ЕКРАНИТЕ
         isUserCheckedIn = await fetchUserCheckInStatus();
         
         if (!isUserCheckedIn) {
             document.getElementById('mainAppContent').style.display = 'none';
             document.getElementById('bigLoginScreen').style.display = 'flex';
-            Swal.close(); // Затваряме евентуални зареждащи прозорчета
-            return; // Спираме изтеглянето на задачи, за да пестим интернет, докато не се чекира
+            // НОВО: Премахнахме Swal.close(); от тук, за да не затваря известията!
+            return; 
         }
         
-        // Ако е чекиран, скриваме големия бутон и показваме картите
         document.getElementById('bigLoginScreen').style.display = 'none';
         document.getElementById('mainAppContent').style.display = 'block';
 
