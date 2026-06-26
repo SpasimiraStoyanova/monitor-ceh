@@ -241,12 +241,18 @@
           if (!currentEmail) { Swal.fire('Внимание', 'Моля, въведете вашия имейл в настройките на профила (⚙️).', 'warning'); return; }
           try {
               Swal.fire({ title: 'Проверка...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-              const { data: lastRecord, error: fetchErr } = await client.from('chekiraniya').select('Действие, Време').eq('Имейл', currentEmail).order('Време', { ascending: false }).limit(1);
+              
+              // НОВО: Добавен филтър .in(...) и тук!
+              const { data: lastRecord, error: fetchErr } = await client.from('chekiraniya')
+                  .select('Действие, Време')
+                  .eq('Имейл', currentEmail)
+                  .in('Действие', ['Влизане', 'Излизане', 'Авто излизане'])
+                  .order('Време', { ascending: false }).limit(1);
               if (fetchErr) throw fetchErr;
+              
               if (lastRecord && lastRecord.length > 0) {
                   const lastAction = lastRecord[0]['Действие']; const lastTime = new Date(lastRecord[0]['Време']); const now = new Date();
                   
-                  // Логика за автоматично затваряне на смяна от предишен ден (ако е забравен Изход)
                   if (lastAction === 'Влизане' && lastTime.toDateString() !== now.toDateString()) {
                       let autoOutTime = new Date(lastTime); autoOutTime.setHours(17, 0, 0, 0);
                       await client.from('chekiraniya').insert([{ "Имейл": currentEmail, "Действие": 'Авто излизане', "Време": autoOutTime.toISOString(), "Локация": "Системно", "Бележка": "Авто корекция" }]);
