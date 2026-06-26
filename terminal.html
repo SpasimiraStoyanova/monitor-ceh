@@ -132,7 +132,45 @@
           if (currentEmail) { OneSignalDeferred.push(function(OneSignal) { OneSignal.login(currentEmail); }); }
           if (!currentOperator || !currentEmail) { await setupProfile(); } else { document.getElementById('uiOperatorName').innerText = currentOperator; }
           if (savedMachine === null) { await changeMachine(true); } else { currentMachine = savedMachine; document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ"; loadTasks(); }
+          
+          // НОВ КОД: Проверка дали в линка има скрито съобщение от Админа
+          checkSystemMessage();
+
           setInterval(() => { if (!activeTaskId) loadTasks(true); }, 30000); 
+      }
+
+    function checkSystemMessage() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const sysTitle = urlParams.get('sysTitle');
+          const sysMsg = urlParams.get('sysMsg');
+
+          if (sysTitle && sysMsg) {
+              // Изкарваме красиво балонче на екрана
+              Swal.fire({
+                  title: '📢 ' + sysTitle,
+                  text: sysMsg,
+                  icon: 'info',
+                  confirmButtonText: 'ОК, РАЗБРАХ',
+                  confirmButtonColor: '#2563eb',
+                  allowOutsideClick: false // Принуждаваме работника изрично да натисне бутона!
+              }).then(() => {
+                  // 1. Изчистваме линка, за да не изскочи съобщението пак, ако презареди страницата
+                  window.history.replaceState({}, document.title, window.location.pathname);
+                  
+                  // 2. Записваме в базата, че го е прочел
+                  if (currentEmail) {
+                      client.from('chekiraniya').insert([{
+                          "Имейл": currentEmail,
+                          "Действие": "📢 Прочетено",
+                          "Време": new Date().toISOString(),
+                          "Локация": "Системно",
+                          "Бележка": sysTitle // Записваме кое точно съобщение е прочетено
+                      }]).then(res => {
+                          if(res.error) console.error("Грешка при запис на прочит", res.error);
+                      });
+                  }
+              });
+          }
       }
 
       function setTaskFilter(filterType) { currentTaskFilter = filterType; document.querySelectorAll('.t-filter-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('filter_' + filterType).classList.add('active'); renderTasks(globalTasks); }
