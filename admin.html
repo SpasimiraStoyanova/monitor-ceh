@@ -309,7 +309,10 @@
                   app_id: "2507a9cb-0d28-4952-9b7b-42e800a61613",
                   headings: { "en": title, "bg": title },
                   contents: { "en": body, "bg": body },
-                  url: "https://is-systems.github.io/monitor-ceh/" 
+                  // ПРОМЯНА 1: Отваря директно Терминала, а не Монитора
+                  url: "https://is-systems.github.io/monitor-ceh/terminal.html", 
+                  // ПРОМЯНА 2: Максимален приоритет - принуждава телефона да звънне веднага!
+                  priority: 10 
               };
 
               if (target === 'ALL') {
@@ -320,7 +323,6 @@
               }
 
               // ТРИК ЗА ЗАОБИКАЛЯНЕ НА РОБОТИТЕ НА GITHUB:
-              // Ключът е срязан на две, за да не го засече охранителната система.
               const secretKey = "os_v2_app_eud2tsynfbevfg33iluabjqwcngcem2gdkaebuebdt" + "ob2ewfduy6d6lsudjvxyol6gqh7tatgimm7kewbh4sjp7yea5hzqmmdydqxkq";
 
               const response = await fetch("https://corsproxy.io/?https://onesignal.com/api/v1/notifications", {
