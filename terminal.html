@@ -183,22 +183,39 @@
           setInterval(() => { if (!activeTaskId && isUserCheckedIn) loadTasks(true); }, 30000); 
       }
 
+      // Това е самият блокиращ прозорец. Той стои над всичко останало.
+      function showBlockerMessage(title, body) {
+          Swal.fire({
+              title: '📢 ' + title,
+              text: body,
+              icon: 'info',
+              confirmButtonText: 'ОК, РАЗБРАХ',
+              confirmButtonColor: '#2563eb',
+              allowOutsideClick: false // Блокира цъкането извън прозореца!
+          }).then(() => {
+              // Като го прочетат, изчистваме линка и записваме в Досието
+              window.history.replaceState({}, document.title, window.location.pathname);
+              if (currentEmail) {
+                  client.from('chekiraniya').insert([{
+                      "Имейл": currentEmail,
+                      "Действие": "📢 Прочетено",
+                      "Време": new Date().toISOString(),
+                      "Локация": "Системно",
+                      "Бележка": title 
+                  }]).then(res => {
+                      if(res.error) console.error("Грешка при запис на прочит", res.error);
+                  });
+              }
+          });
+      }
+
+      // Тази проверява дали не идват от кликнато известие на заключен екран
       function checkSystemMessage() {
           const urlParams = new URLSearchParams(window.location.search);
           const sysTitle = urlParams.get('sysTitle');
           const sysMsg = urlParams.get('sysMsg');
-
           if (sysTitle && sysMsg) {
-              Swal.fire({
-                  title: '📢 ' + sysTitle, text: sysMsg, icon: 'info', confirmButtonText: 'ОК, РАЗБРАХ', confirmButtonColor: '#2563eb', allowOutsideClick: false
-              }).then(() => {
-                  window.history.replaceState({}, document.title, window.location.pathname);
-                  if (currentEmail) {
-                      client.from('chekiraniya').insert([{ "Имейл": currentEmail, "Действие": "📢 Прочетено", "Време": new Date().toISOString(), "Локация": "Системно", "Бележка": sysTitle }]).then(res => {
-                          if(res.error) console.error("Грешка при запис на прочит", res.error);
-                      });
-                  }
-              });
+              showBlockerMessage(sysTitle, sysMsg);
           }
       }
 
