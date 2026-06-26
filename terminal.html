@@ -7,7 +7,7 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-   <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+    <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
     <script>
       window.OneSignalDeferred = window.OneSignalDeferred || [];
       OneSignalDeferred.push(async function(OneSignal) {
@@ -28,9 +28,9 @@
       .profile-area:active { background: #f1f5f9; }
       .operator-name { font-size: 0.8em; color: #64748b; font-weight: bold; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .action-buttons { display: flex; gap: 6px; }
-      .btn-check { color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 900; font-size: 0.85em; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-      .btn-in { background-color: #16a34a; }
-      .btn-in:active { background-color: #15803d; transform: scale(0.95); }
+      .btn-check { color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 900; font-size: 0.85em; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.1); transition: transform 0.1s; }
+      .btn-monitor { background-color: #0284c7; }
+      .btn-monitor:active { background-color: #0369a1; transform: scale(0.95); }
       .btn-out { background-color: #dc2626; }
       .btn-out:active { background-color: #b91c1c; transform: scale(0.95); }
       .machine-bar { 
@@ -44,9 +44,9 @@
           text-transform: uppercase; 
           cursor: pointer; 
           box-sizing: border-box;
-          white-space: nowrap; /* Държи текста строго на един ред */
-          overflow: hidden; /* Скрива излишния текст, който излиза от екрана */
-          text-overflow: ellipsis; /* Слага три точки (...) накрая */
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
       }
       .machine-title { color: #1e3a8a; font-weight: 900; text-decoration: underline; margin-left: 5px;}
       .task-filters { display: flex; width: 100%; background: white; border-bottom: 1px solid #cbd5e1; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
@@ -79,28 +79,52 @@
     </style>
   </head>
   <body>
+    <!-- ГОРНО МЕНЮ (ХЕДЪР) -->
     <div class="app-header">
       <div class="profile-area" onclick="setupProfile()" title="Настройки на профила">
         <img src="icon.png" style="height: 38px; width: 38px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 5px rgba(0,0,0,0.15); margin-right: 5px;" onerror="this.style.display='none'">
         <div><div style="font-weight:900; color:#1e3a8a; font-size: 1.1em;">ИС-СИСТЕМС</div><div class="operator-name" id="uiOperatorName">ОПЕРАТОР</div></div>
       </div>
       <div class="action-buttons">
-        <button class="btn-check btn-in" onclick="processCheckIn('Влизане')">🟢 ВХОД</button>
+        <!-- Сменихме зеления бутон с бутон за Монитора -->
+        <button class="btn-check btn-monitor" onclick="window.location.href='index.html'">📺 МОНИТОР</button>
         <button class="btn-check btn-out" onclick="processCheckIn('Излизане')">🔴 ИЗХОД</button>
       </div>
     </div>
-    <div class="machine-bar" onclick="changeMachine()">Работно място: <span class="machine-title" id="uiMachineName">ВСИЧКИ</span> ✏️</div>
-    <div class="task-filters">
-        <button class="t-filter-btn active" id="filter_all" onclick="setTaskFilter('all')">Всички</button>
-        <button class="t-filter-btn" id="filter_ready" onclick="setTaskFilter('ready')">🟢 Мога</button>
-        <button class="t-filter-btn" id="filter_blocked" onclick="setTaskFilter('blocked')">🛑 Не мога</button>
+
+    <!-- ГОЛЕМИЯТ ЕКРАН "ВХОД ЗА СМЯНА" (Показва се само ако не е чекиран) -->
+    <div id="bigLoginScreen" style="display: none; padding: 20px; align-items: center; justify-content: center; min-height: 75vh;">
+      <div style="background: white; padding: 40px 20px; border-radius: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); text-align: center; border: 2px solid #e2e8f0; width: 100%; max-width: 450px;">
+          <div style="font-size: 5em; margin-bottom: 10px;">🏭</div>
+          <h2 style="color: #1e293b; margin-top: 0; font-size: 1.8em;">Здравейте!</h2>
+          <p style="color: #64748b; margin-bottom: 35px; font-size: 1.1em; font-weight: 600;">Отбележете началото на смяната си, за да отключите работния плот със задачите.</p>
+          <button onclick="processCheckIn('Влизане')" style="background-color: #16a34a; color: white; width: 100%; padding: 25px 20px; font-size: 1.4em; font-weight: 900; border: none; border-radius: 16px; cursor: pointer; box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35); transition: transform 0.1s;">🟢 ВХОД ЗА СМЯНА</button>
+      </div>
     </div>
-    <div class="container"><div id="tasksContainer"><div id="loadingMsg" style="text-align:center; padding: 40px; font-weight:bold; color:#64748b; font-size: 1.2em;">Търсене на задачи... 🔄</div></div></div>
-    <button class="history-toggle-btn" onclick="toggleHistory()">🕒</button>
-    <div class="local-history" id="historyPanel">
-      <button onclick="toggleHistory()" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 16px; color: #94a3b8; font-weight: bold;">✖</button>
-      <h4>🕒 История на този телефон</h4>
-      <ul id="historyList" class="history-list"><li class="history-item" style="color:#94a3b8; text-align:center;">Няма скорошни действия</li></ul>
+
+    <!-- ГЛАВНО СЪДЪРЖАНИЕ (Скрито, докато не се чекира) -->
+    <div id="mainAppContent" style="display: none;">
+        <div class="machine-bar" onclick="changeMachine()">Работно място: <span class="machine-title" id="uiMachineName">ВСИЧКИ</span> ✏️</div>
+        
+        <div class="task-filters">
+            <button class="t-filter-btn active" id="filter_all" onclick="setTaskFilter('all')">Всички</button>
+            <button class="t-filter-btn" id="filter_ready" onclick="setTaskFilter('ready')">🟢 Мога</button>
+            <button class="t-filter-btn" id="filter_blocked" onclick="setTaskFilter('blocked')">🛑 Не мога</button>
+        </div>
+        
+        <div class="container">
+            <div id="tasksContainer">
+                <div id="loadingMsg" style="text-align:center; padding: 40px; font-weight:bold; color:#64748b; font-size: 1.2em;">Търсене на задачи... 🔄</div>
+            </div>
+        </div>
+
+        <!-- ИСТОРИЯ (също се скрива при липса на вход) -->
+        <button class="history-toggle-btn" onclick="toggleHistory()">🕒</button>
+        <div class="local-history" id="historyPanel">
+          <button onclick="toggleHistory()" style="position: absolute; top: 10px; right: 10px; background: transparent; border: none; font-size: 16px; color: #94a3b8; font-weight: bold;">✖</button>
+          <h4>🕒 История на този телефон</h4>
+          <ul id="historyList" class="history-list"><li class="history-item" style="color:#94a3b8; text-align:center;">Няма скорошни действия</li></ul>
+        </div>
     </div>
 
   <script>
@@ -131,41 +155,28 @@
           currentOperator = localStorage.getItem('mes_operator'); currentEmail = localStorage.getItem('mes_email'); let savedMachine = localStorage.getItem('mes_machine');
           if (currentEmail) { OneSignalDeferred.push(function(OneSignal) { OneSignal.login(currentEmail); }); }
           if (!currentOperator || !currentEmail) { await setupProfile(); } else { document.getElementById('uiOperatorName').innerText = currentOperator; }
-          if (savedMachine === null) { await changeMachine(true); } else { currentMachine = savedMachine; document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ"; loadTasks(); }
+          if (savedMachine === null) { await changeMachine(true); } else { currentMachine = savedMachine; document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ"; }
           
-          // НОВ КОД: Проверка дали в линка има скрито съобщение от Админа
           checkSystemMessage();
+          
+          // Извикваме loadTasks, за да провери чекирането и да скрие/покаже екраните
+          loadTasks();
 
-          setInterval(() => { if (!activeTaskId) loadTasks(true); }, 30000); 
+          setInterval(() => { if (!activeTaskId && isUserCheckedIn) loadTasks(true); }, 30000); 
       }
 
-    function checkSystemMessage() {
+      function checkSystemMessage() {
           const urlParams = new URLSearchParams(window.location.search);
           const sysTitle = urlParams.get('sysTitle');
           const sysMsg = urlParams.get('sysMsg');
 
           if (sysTitle && sysMsg) {
-              // Изкарваме красиво балонче на екрана
               Swal.fire({
-                  title: '📢 ' + sysTitle,
-                  text: sysMsg,
-                  icon: 'info',
-                  confirmButtonText: 'ОК, РАЗБРАХ',
-                  confirmButtonColor: '#2563eb',
-                  allowOutsideClick: false // Принуждаваме работника изрично да натисне бутона!
+                  title: '📢 ' + sysTitle, text: sysMsg, icon: 'info', confirmButtonText: 'ОК, РАЗБРАХ', confirmButtonColor: '#2563eb', allowOutsideClick: false
               }).then(() => {
-                  // 1. Изчистваме линка, за да не изскочи съобщението пак, ако презареди страницата
                   window.history.replaceState({}, document.title, window.location.pathname);
-                  
-                  // 2. Записваме в базата, че го е прочел
                   if (currentEmail) {
-                      client.from('chekiraniya').insert([{
-                          "Имейл": currentEmail,
-                          "Действие": "📢 Прочетено",
-                          "Време": new Date().toISOString(),
-                          "Локация": "Системно",
-                          "Бележка": sysTitle // Записваме кое точно съобщение е прочетено
-                      }]).then(res => {
+                      client.from('chekiraniya').insert([{ "Имейл": currentEmail, "Действие": "📢 Прочетено", "Време": new Date().toISOString(), "Локация": "Системно", "Бележка": sysTitle }]).then(res => {
                           if(res.error) console.error("Грешка при запис на прочит", res.error);
                       });
                   }
@@ -176,37 +187,9 @@
       function setTaskFilter(filterType) { currentTaskFilter = filterType; document.querySelectorAll('.t-filter-btn').forEach(btn => btn.classList.remove('active')); document.getElementById('filter_' + filterType).classList.add('active'); renderTasks(globalTasks); }
 
       function triggerPushPrompt() {
-          // Проверяваме какво е текущото състояние на браузъра
-          if (Notification.permission === 'granted') {
-              Swal.fire({
-                  icon: 'info',
-                  title: 'Вече сте абонирани!',
-                  text: 'Този телефон вече има разрешение да получава известия.',
-                  confirmButtonColor: '#2563eb'
-              });
-              return;
-          }
-          
-          if (Notification.permission === 'denied') {
-              Swal.fire({
-                  icon: 'warning',
-                  title: 'Известията са блокирани',
-                  text: 'Браузърът е блокирал известията. За да ги пуснете, натиснете катинарчето (🔒) или иконата за настройки горе до адреса (is-systems...) и позволете известията ръчно.',
-                  confirmButtonColor: '#e74c3c'
-              });
-              return;
-          }
-
-          // Ако не са нито разрешени, нито блокирани, викаме OneSignal
-          OneSignalDeferred.push(async function(OneSignal) {
-              try {
-                  // Първо затваряме профилния прозорец, за да не пречи на системното съобщение
-                  Swal.close(); 
-                  await OneSignal.Notifications.requestPermission();
-              } catch(e) {
-                  console.error("Грешка при известията:", e);
-              }
-          });
+          if (Notification.permission === 'granted') { Swal.fire({ icon: 'info', title: 'Вече сте абонирани!', text: 'Този телефон вече има разрешение да получава известия.', confirmButtonColor: '#2563eb' }); return; }
+          if (Notification.permission === 'denied') { Swal.fire({ icon: 'warning', title: 'Известията са блокирани', text: 'Браузърът е блокирал известията. За да ги пуснете, натиснете катинарчето (🔒) или иконата за настройки горе до адреса (is-systems...) и позволете известията ръчно.', confirmButtonColor: '#e74c3c' }); return; }
+          OneSignalDeferred.push(async function(OneSignal) { try { Swal.close(); await OneSignal.Notifications.requestPermission(); } catch(e) { console.error("Грешка:", e); } });
       }
 
       async function setupProfile() {
@@ -216,7 +199,9 @@
                   '<div style="background: #e0e7ff; padding: 10px; border-radius: 8px; margin-bottom: 15px;"><button type="button" onclick="triggerPushPrompt()" style="background: #4338ca; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: bold; width:100%; box-shadow: 0 2px 4px rgba(67,56,202,0.3);">🔔 Поискай известия (Ръчно)</button><p style="font-size: 11px; color: #475569; margin: 5px 0 0 0; text-align: center;">Ако все още не сте се абонирали.</p></div>' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-bottom:5px; color:#475569;">Име и Фамилия</label><input id="swal-name" class="swal2-input" style="margin-top:0;" value="' + (currentOperator || '') + '">' +
                   '<label style="display:block; text-align:left; font-size:14px; font-weight:bold; margin-top:15px; margin-bottom:5px; color:#475569;">Личен Имейл</label><input id="swal-email" class="swal2-input" type="email" style="margin-top:0;" value="' + (currentEmail || '') + '">' +
-                  '<div style="margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: center; gap: 10px;"><button type="button" onclick="window.location.href=\'admin.html\'" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">🔒 Админ</button><button type="button" onclick="window.location.href=\'index.html\'" style="background: transparent; border: 1px solid #bae6fd; color: #0284c7; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">📺 Монитор</button></div>',
+                  '<div style="margin-top: 25px; border-top: 1px solid #e2e8f0; padding-top: 15px; display: flex; justify-content: center; gap: 10px;">' +
+                  '<button type="button" onclick="window.location.href=\'admin.html\'" style="background: transparent; border: 1px solid #cbd5e1; color: #475569; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">🔒 Админ</button>' +
+                  '<button type="button" disabled style="background: #f1f5f9; border: 1px solid #cbd5e1; color: #94a3b8; padding: 6px 12px; border-radius: 6px; cursor: not-allowed; font-size: 12px; font-weight: bold; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);">🔒 Досие (Скоро)</button></div>',
               focusConfirm: false, allowOutsideClick: !!currentOperator, confirmButtonText: 'Запази профила', confirmButtonColor: '#2563eb',
               preConfirm: () => { return [ document.getElementById('swal-name').value.trim(), document.getElementById('swal-email').value.trim() ] }
           });
@@ -255,6 +240,8 @@
               if (fetchErr) throw fetchErr;
               if (lastRecord && lastRecord.length > 0) {
                   const lastAction = lastRecord[0]['Действие']; const lastTime = new Date(lastRecord[0]['Време']); const now = new Date();
+                  
+                  // Логика за автоматично затваряне на смяна от предишен ден (ако е забравен Изход)
                   if (lastAction === 'Влизане' && lastTime.toDateString() !== now.toDateString()) {
                       let autoOutTime = new Date(lastTime); autoOutTime.setHours(17, 0, 0, 0);
                       await client.from('chekiraniya').insert([{ "Имейл": currentEmail, "Действие": 'Авто излизане', "Време": autoOutTime.toISOString(), "Локация": "Системно", "Бележка": "Авто корекция" }]);
@@ -273,7 +260,9 @@
                       window.speechSynthesis.cancel(); let msg = new SpeechSynthesisUtterance("Регистрирано е закъснение."); msg.lang = 'bg-BG'; msg.rate = 1.0; msg.pitch = 1.1; window.speechSynthesis.speak(msg);
                   }
               }
-              Swal.fire({ icon: actionType === 'Влизане' ? 'success' : 'info', title: 'Успешно!', text: `${actionType} е регистрирано.`, timer: 2000, showConfirmButton: false }).then(() => { loadTasks(true); });
+              Swal.fire({ icon: actionType === 'Влизане' ? 'success' : 'info', title: 'Успешно!', text: `${actionType} е регистрирано.`, timer: 2000, showConfirmButton: false }).then(() => { 
+                  loadTasks(true); 
+              });
           } catch (err) { console.error(err); Swal.fire('❌ Грешка при връзката', 'Моля, проверете интернета си.', 'error'); }
       }
 
@@ -313,12 +302,24 @@
       }
 
       async function loadTasks(isSilent = false) {
+        // НОВА ЛОГИКА ЗА СКРИВАНЕ/ПОКАЗВАНЕ НА ЕКРАНИТЕ
+        isUserCheckedIn = await fetchUserCheckInStatus();
+        
+        if (!isUserCheckedIn) {
+            document.getElementById('mainAppContent').style.display = 'none';
+            document.getElementById('bigLoginScreen').style.display = 'flex';
+            Swal.close(); // Затваряме евентуални зареждащи прозорчета
+            return; // Спираме изтеглянето на задачи, за да пестим интернет, докато не се чекира
+        }
+        
+        // Ако е чекиран, скриваме големия бутон и показваме картите
+        document.getElementById('bigLoginScreen').style.display = 'none';
+        document.getElementById('mainAppContent').style.display = 'block';
+
         var container = document.getElementById('tasksContainer');
         if (!isSilent) container.innerHTML = '<div id="loadingMsg" style="text-align:center; padding: 40px; font-weight:bold; color:#64748b; font-size: 1.2em;">Търсене на задачи... 🔄</div>';
         
         try {
-            isUserCheckedIn = await fetchUserCheckInStatus();
-
             const [plansRes, bomRes, routesRes, reportsRes, skladRes, nomRes] = await Promise.all([
                 client.from('plan').select('*').eq('Статус', 'Активен').limit(100000), client.from('bom').select('*').limit(100000),
                 client.from('marshruti').select('*').limit(100000), client.from('otcheti').select('*').limit(100000), 
@@ -471,12 +472,10 @@
               actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px;">🛑 БЛОКИРАНА ЗАДАЧА</button>`;
           } else if (t.hasLimit) {
               bomBadgeHtml = `<div style="background-color: #dcfce7; border: 1px solid #bbf7d0; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #166534; font-weight: 800; text-align: center;">📦 Възможни: ${t.maxAllowed} бр.</div>`;
-              if (!isUserCheckedIn) actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor: not-allowed;">🛑 ПЪРВО ВХОД ЗА ДЕНЯ</button>`;
-              else actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">🚀 ПОЕМИ ЗАДАЧА</button>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">🚀 ПОЕМИ ЗАДАЧА</button>`;
           } else {
               bomBadgeHtml = `<div style="background-color: #e0e7ff; border: 1px solid #c7d2fe; padding: 10px; border-radius: 8px; margin-bottom: 15px; font-size: 13px; color: #3730a3; font-weight: 800; text-align: center;">⚡ Първа стъпка (свободно производство)</div>`;
-              if (!isUserCheckedIn) actionButtonHtml = `<button disabled style="background-color: #94a3b8; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor: not-allowed;">🛑 ПЪРВО ВХОД ЗА ДЕНЯ</button>`;
-              else actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">🚀 ПОЕМИ ЗАДАЧА</button>`;
+              actionButtonHtml = `<button onclick="claimCurrentTaskDOM('${t.id}')" style="background-color: #2563eb; color: white; width: 100%; padding: 16px; font-size: 1.15em; font-weight: 800; border: none; border-radius: 10px; cursor:pointer; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);">🚀 ПОЕМИ ЗАДАЧА</button>`;
           }
 
           html += `
