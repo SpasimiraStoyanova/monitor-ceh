@@ -140,10 +140,22 @@
       let currentTaskFilter = 'all'; let activeTaskId = null; let isUserCheckedIn = false; 
       const WORKSHOP_LAT = 41.8937; const WORKSHOP_LNG = 23.4875;
 
+      // НОВА ФУНКЦИЯ ЗА ОХРАНА: Проверява дали имейлът съществува в белия списък и дали е активен
+      async function verifyUserAccess(email) {
+          try {
+              const { data, error } = await client.from('personal').select('Статус').eq('Имейл', email).limit(1);
+              if (error) return { allowed: false, msg: "Грешка при връзката със сървъра." };
+              if (!data || data.length === 0) return { allowed: false, msg: "Неразпознат служител! Свържете се с ръководител." };
+              if (data[0]['Статус'] === 'Блокиран') return { allowed: false, msg: "Достъпът ви до системата е ограничен!" };
+              return { allowed: true };
+          } catch (err) {
+              return { allowed: false, msg: err.message };
+          }
+      }
+
       async function fetchUserCheckInStatus() {
           if (!currentEmail) return false;
           try {
-              // Игнорираме 'Прочетено' и 'Съобщение', гледаме само Влизане и Излизане
               const { data, error } = await client.from('chekiraniya')
                   .select('Действие, Време')
                   .eq('Имейл', currentEmail)
@@ -160,7 +172,18 @@
 
       async function initTerminal() {
           currentOperator = localStorage.getItem('mes_operator'); currentEmail = localStorage.getItem('mes_email'); let savedMachine = localStorage.getItem('mes_machine');
-          if (currentEmail) { OneSignalDeferred.push(function(OneSignal) { OneSignal.login(currentEmail); }); }
+          
+          if (currentEmail) { 
+              // ПРОВЕРКА НА БЕЛИЯ СПИСЪК ПРИ ВСЯКО ОТВАРЯНЕ
+              let access = await verifyUserAccess(currentEmail);
+              if (!access.allowed) {
+                  localStorage.removeItem('mes_operator'); localStorage.removeItem('mes_email');
+                  Swal.fire('ОТКАЗАН ДОСТЪП', access.msg, 'error').then(() => { location.reload(); });
+                  return; // Спира зареждането, ако е блокиран
+              }
+              OneSignalDeferred.push(function(OneSignal) { OneSignal.login(currentEmail); }); 
+          }
+
           if (!currentOperator || !currentEmail) { await setupProfile(); } else { document.getElementById('uiOperatorName').innerText = currentOperator; }
           if (savedMachine === null) { await changeMachine(true); } else { currentMachine = savedMachine; document.getElementById('uiMachineName').innerText = currentMachine || "ВСИЧКИ"; }
           
@@ -210,12 +233,24 @@
               focusConfirm: false, allowOutsideClick: !!currentOperator, confirmButtonText: 'Запази профила', confirmButtonColor: '#2563eb',
               preConfirm: () => { return [ document.getElementById('swal-name').value.trim(), document.getElementById('swal-email').value.trim() ] }
           });
+          
           if (formValues && formValues[0] && formValues[1]) {
-              currentOperator = formValues[0]; currentEmail = formValues[1].toLowerCase();
+              let enteredEmail = formValues[1].toLowerCase();
+              
+              // ПРОВЕРКА НА БЕЛИЯ СПИСЪК ПРИ ЗАПИС
+              Swal.fire({ title: 'Проверка на правата...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+              let access = await verifyUserAccess(enteredEmail);
+              
+              if (!access.allowed) {
+                  Swal.fire('ОТКАЗАН ДОСТЪП', access.msg, 'error').then(() => { setupProfile(); });
+                  return;
+              }
+
+              currentOperator = formValues[0]; currentEmail = enteredEmail;
               localStorage.setItem('mes_operator', currentOperator); localStorage.setItem('mes_email', currentEmail);
               document.getElementById('uiOperatorName').innerText = currentOperator;
               OneSignalDeferred.push(function(OneSignal) { OneSignal.login(currentEmail); });
-              Swal.fire({icon: 'success', title: 'Профилът е запазен!', timer: 1500, showConfirmButton: false});
+              Swal.fire({icon: 'success', title: 'Профилът е одобрен!', timer: 1500, showConfirmButton: false});
           } else if (!currentOperator) { Swal.fire('Внимание', 'Име и имейл са задължителни!', 'error').then(() => location.reload()); }
       }
 
@@ -369,7 +404,6 @@
         if (!isUserCheckedIn) {
             document.getElementById('mainAppContent').style.display = 'none';
             document.getElementById('bigLoginScreen').style.display = 'flex';
-            // ВАЖНО: Без Swal.close() тук, за да не затваря известията!
             return; 
         }
         
