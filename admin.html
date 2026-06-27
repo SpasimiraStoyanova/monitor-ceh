@@ -28,15 +28,12 @@
       .action-btn:hover { background-color: #f1f5f9; }
       .btn-edit { color: #2563eb; }
       .btn-delete { color: #ef4444; }
-      
-      /* СТИЛОВЕ ЗА МАСОВО ДЕЙСТВИЕ */
       .mass-action-bar { display: none; background-color: #fef2f2; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 8px; margin-bottom: 20px; align-items: center; justify-content: space-between; box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.1); animation: slideDown 0.3s ease-out; }
       @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       .mass-action-text { color: #991b1b; font-weight: 800; font-size: 1.05em; }
       .btn-danger-mass { background-color: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9em; box-shadow: 0 2px 4px rgba(220, 38, 38, 0.3); }
       .btn-danger-mass:hover { background-color: #b91c1c; }
       .row-checkbox { transform: scale(1.3); cursor: pointer; accent-color: #4338ca; }
-
       .layout-wrapper { display: flex; gap: 20px; align-items: flex-start; }
       .sidebar { width: 280px; flex-shrink: 0; background: white; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden; display: none; }
       .sidebar-header { background: #f8fafc; padding: 15px; font-weight: 800; color: #334155; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
@@ -73,7 +70,6 @@
     </style>
   </head>
   <body>
-
     <div id="appContent" style="display: none;">
         <div class="navbar">
           <div class="brand"><img src="icon.png" style="height: 32px; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.2);" onerror="this.style.display='none'"> ИС-СИСТЕМС</div>
@@ -82,9 +78,7 @@
 
         <div class="main-container">
           <div class="controls-row">
-            <div class="search-box">
-              <input type="text" id="searchInput" oninput="filterTable()" placeholder="🔍 Бързо търсене в таблицата...">
-            </div>
+            <div class="search-box"><input type="text" id="searchInput" oninput="filterTable()" placeholder="🔍 Бързо търсене в таблицата..."></div>
             <div style="display: flex; gap: 10px;">
                 <input type="file" id="pdfUploader" accept="application/pdf" style="display:none;" onchange="processPDF(event)">
                 <button class="btn-primary" id="pdfBtn" onclick="document.getElementById('pdfUploader').click()" style="display: none; background-color: #059669; box-shadow: 0 2px 4px rgba(5, 150, 105, 0.3);">📥 Зареди от PDF</button>
@@ -154,20 +148,12 @@
 
       window.onload = () => {
           if (sessionStorage.getItem('is_admin_logged') !== 'true') {
-              Swal.fire({
-                  title: '🔐 Системен достъп', text: 'Въведете административен PIN код', input: 'password',
-                  allowOutsideClick: false, allowEscapeKey: false, showCancelButton: false, confirmButtonText: 'ВХОД', confirmButtonColor: '#4338ca'
+              Swal.fire({ title: '🔐 Системен достъп', text: 'Въведете административен PIN код', input: 'password', allowOutsideClick: false, allowEscapeKey: false, showCancelButton: false, confirmButtonText: 'ВХОД', confirmButtonColor: '#4338ca'
               }).then((result) => {
-                  if (result.value === ADMIN_PIN) {
-                      sessionStorage.setItem('is_admin_logged', 'true');
-                      document.getElementById('appContent').style.display = 'block';
-                      initializeApp(); 
+                  if (result.value === ADMIN_PIN) { sessionStorage.setItem('is_admin_logged', 'true'); document.getElementById('appContent').style.display = 'block'; initializeApp(); 
                   } else { Swal.fire('Грешен код!', 'Опитайте отново.', 'error').then(() => location.reload()); }
               });
-          } else {
-              document.getElementById('appContent').style.display = 'block';
-              initializeApp();
-          }
+          } else { document.getElementById('appContent').style.display = 'block'; initializeApp(); }
       };
 
       const client = supabase.createClient(
@@ -177,7 +163,8 @@
 
       const tableConfigs = {
         plan: { label: '📅 Месечен План', table: 'plan', key: 'id', fields: [ { name: 'id', type: 'number', readonly: true, hideOnAdd: true }, { name: 'ID Детайл', type: 'text', required: true }, { name: 'Целево количество', type: 'number', required: true }, { name: 'Месец', type: 'text', required: true }, { name: 'Година', type: 'number', required: true }, { name: 'Статус', type: 'select', options: ['Активен', 'Завършен', '📦 Опакован', '🚚 Изпратен'], required: true } ] },
-        chekiraniya: { label: '👥 Персонал & Достъп', table: 'chekiraniya', readOnlyTab: true, fields: [ { name: 'Време', type: 'text' }, { name: 'Имейл', type: 'text' }, { name: 'Действие', type: 'text' }, { name: 'Локация', type: 'text' }, { name: 'Бележка', type: 'text' } ] },
+        personal: { label: '🔒 Оторизиран Персонал', table: 'personal', key: 'id', fields: [ { name: 'id', type: 'number', readonly: true, hideOnAdd: true }, { name: 'Имейл', type: 'text', required: true }, { name: 'Име', type: 'text' }, { name: 'Статус', type: 'select', options: ['Активен', 'Блокиран'], required: true, def: 'Активен' } ] },
+        chekiraniya: { label: '👥 Присъствие & Достъп', table: 'chekiraniya', readOnlyTab: true, fields: [ { name: 'Време', type: 'text' }, { name: 'Имейл', type: 'text' }, { name: 'Действие', type: 'text' }, { name: 'Локация', type: 'text' }, { name: 'Бележка', type: 'text' } ] },
         sklad_gp: { label: '🏭 Склад Цех', table: 'computed_sklad_gp', readOnlyTab: true, fields: [ { name: 'ID Детайл', type: 'text' }, { name: 'Име', type: 'text' }, { name: 'Операция', type: 'text' }, { name: 'Наличност в цеха', type: 'number' } ] },
         nomenklatura: { label: '🗂️ Номенклатура', table: 'Номенклатура', key: 'id', fields: [ { name: 'id', type: 'number', readonly: true, hideOnAdd: true }, { name: 'ID Детайл', type: 'text', required: true }, { name: 'Вътрешно име', type: 'text' }, { name: 'Тип', type: 'text' }, { name: 'ID Родител', type: 'text' }, { name: 'Разходна норма', type: 'number', def: 1 }, { name: 'Единици', type: 'text', def: 'бр.' }, { name: 'Линк към чертеж', type: 'text' } ] },
         sklad: { label: '📦 Склад Материали', table: 'sklad', key: 'ID Детайл', fields: [ { name: 'ID Детайл', type: 'text', required: true, readonlyOnEdit: true }, { name: 'Начална наличност', type: 'number', def: 0 }, { name: 'Доставено', type: 'number', def: 0 }, { name: 'Изразходено', type: 'number', def: 0 }, { name: 'Остатък', type: 'number', def: 0, readonly: true }, { name: 'Минимално количество', type: 'number', def: 0 }, { name: 'Бележки', type: 'text' } ] },
@@ -216,72 +203,44 @@
       }
 
       function toggleSelectAll(event) {
-          const isChecked = event.target.checked;
-          const checkboxes = document.querySelectorAll('.row-cb');
-          checkboxes.forEach(cb => {
-              cb.checked = isChecked;
-              const idx = parseInt(cb.dataset.index);
-              if (isChecked) selectedIndices.add(idx); else selectedIndices.delete(idx);
-          });
+          const isChecked = event.target.checked; const checkboxes = document.querySelectorAll('.row-cb');
+          checkboxes.forEach(cb => { cb.checked = isChecked; const idx = parseInt(cb.dataset.index); if (isChecked) selectedIndices.add(idx); else selectedIndices.delete(idx); });
           updateMassActionBar();
       }
 
       function toggleRowSelection(event, trueIndex) {
-          if (event.target.checked) selectedIndices.add(trueIndex);
-          else selectedIndices.delete(trueIndex);
-          
+          if (event.target.checked) selectedIndices.add(trueIndex); else selectedIndices.delete(trueIndex);
           const allCheckbox = document.getElementById('selectAllCb');
-          if (allCheckbox) {
-             const visibleCheckboxes = document.querySelectorAll('.row-cb');
-             const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked);
-             allCheckbox.checked = visibleCheckboxes.length > 0 && allChecked;
-          }
+          if (allCheckbox) { const visibleCheckboxes = document.querySelectorAll('.row-cb'); const allChecked = Array.from(visibleCheckboxes).every(cb => cb.checked); allCheckbox.checked = visibleCheckboxes.length > 0 && allChecked; }
           updateMassActionBar();
       }
 
       function updateMassActionBar() {
-          const bar = document.getElementById('massActionBar');
-          const text = document.getElementById('massActionText');
-          if (selectedIndices.size > 0 && !tableConfigs[currentTab].readOnlyTab) {
-              text.innerText = `Маркирани: ${selectedIndices.size} записа`;
-              bar.style.display = 'flex';
-          } else {
-              bar.style.display = 'none';
-          }
+          const bar = document.getElementById('massActionBar'); const text = document.getElementById('massActionText');
+          if (selectedIndices.size > 0 && !tableConfigs[currentTab].readOnlyTab) { text.innerText = `Маркирани: ${selectedIndices.size} записа`; bar.style.display = 'flex'; } else { bar.style.display = 'none'; }
       }
 
       async function deleteSelectedItems() {
-          const config = tableConfigs[currentTab]; 
-          const count = selectedIndices.size;
-          const res = await Swal.fire({ 
-              title: `Изтриване на ${count} записа?`, 
-              text: "Това действие е безвъзвратно!", 
-              icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Да, изтрий всички!', cancelButtonText: 'Отказ' 
-          });
-          
+          const config = tableConfigs[currentTab]; const count = selectedIndices.size;
+          const res = await Swal.fire({ title: `Изтриване на ${count} записа?`, text: "Това действие е безвъзвратно!", icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Да, изтрий всички!', cancelButtonText: 'Отказ' });
           if (res.isConfirmed) { 
               try { 
                   Swal.fire({title: 'Изтриване...', allowOutsideClick: false, didOpen: () => Swal.showLoading()}); 
                   const keysToDelete = Array.from(selectedIndices).map(idx => globalRows[idx][config.key]);
                   const { error } = await client.from(config.table).delete().in(config.key, keysToDelete); 
                   if (error) throw error; 
-                  
-                  selectedIndices.clear();
-                  updateMassActionBar();
-                  Swal.fire({icon: 'success', title: 'Изтрити!', timer: 1500, showConfirmButton: false}); 
-                  loadCurrentTableData(); 
-              } catch(err) { 
-                  Swal.fire('Грешка', err.message, 'error'); 
-              } 
+                  selectedIndices.clear(); updateMassActionBar();
+                  Swal.fire({icon: 'success', title: 'Изтрити!', timer: 1500, showConfirmButton: false}); loadCurrentTableData(); 
+              } catch(err) { Swal.fire('Грешка', err.message, 'error'); } 
           }
       }
 
       async function openNotificationDialog() {
-          const { data } = await client.from('chekiraniya').select('Имейл');
+          const { data } = await client.from('personal').select('Имейл').eq('Статус', 'Активен');
           let emails = [];
           if (data) emails = [...new Set(data.map(i => i['Имейл']?.trim().toLowerCase()).filter(e => e))].sort();
           
-          let optionsHtml = '<option value="ALL">Всички работници (на смяна)</option>';
+          let optionsHtml = '<option value="ALL">Всички (Активен персонал)</option>';
           emails.forEach(e => optionsHtml += `<option value="${e}">${e}</option>`);
 
           const { value: formValues } = await Swal.fire({
@@ -303,11 +262,8 @@
 
       async function sendOneSignalNotification(target, title, body) {
           Swal.fire({ title: 'Изпращане...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-          
           try {
-              let safeTitle = encodeURIComponent(title);
-              let safeBody = encodeURIComponent(body);
-
+              let safeTitle = encodeURIComponent(title); let safeBody = encodeURIComponent(body);
               let payload = {
                   app_id: "2507a9cb-0d28-4952-9b7b-42e800a61613",
                   headings: { "en": title, "bg": title },
@@ -316,30 +272,20 @@
                   priority: 10 
               };
 
-              if (target === 'ALL') {
-                  payload.included_segments = ["Total Subscriptions"]; 
-              } else {
-                  payload.include_aliases = { "external_id": [target] };
-                  payload.target_channel = "push";
-              }
+              if (target === 'ALL') { payload.included_segments = ["Total Subscriptions"]; } 
+              else { payload.include_aliases = { "external_id": [target] }; payload.target_channel = "push"; }
 
               const secretKey = "os_v2_app_eud2tsynfbevfg33iluabjqwcngcem2gdkaebuebdt" + "ob2ewfduy6d6lsudjvxyol6gqh7tatgimm7kewbh4sjp7yea5hzqmmdydqxkq";
 
               const response = await fetch("https://corsproxy.io/?https://onesignal.com/api/v1/notifications", {
                   method: "POST",
-                  headers: {
-                      "Content-Type": "application/json; charset=utf-8",
-                      "Authorization": "Key " + secretKey
-                  },
+                  headers: { "Content-Type": "application/json; charset=utf-8", "Authorization": "Key " + secretKey },
                   body: JSON.stringify(payload)
               });
 
-              if (!response.ok) {
-                  const errData = await response.json();
-                  throw new Error("Грешка от сървъра: " + JSON.stringify(errData.errors));
-              }
+              if (!response.ok) { const errData = await response.json(); throw new Error("Грешка от сървъра: " + JSON.stringify(errData.errors)); }
 
-              // НОВО: Записваме съобщението в базата данни за историята!
+              // Записва се в базата, за да може работниците да го видят в Пощенската си кутия!
               await client.from('chekiraniya').insert([{
                   "Имейл": "СИСТЕМА",
                   "Действие": "Съобщение",
@@ -349,81 +295,36 @@
               }]);
 
               Swal.fire('Успех!', 'Известието беше изпратено успешно.', 'success');
-          } catch (err) { 
-              console.error(err); 
-              Swal.fire('Грешка при изпращане', err.message, 'error'); 
-          }
+          } catch (err) { console.error(err); Swal.fire('Грешка при изпращане', err.message, 'error'); }
       }
 
-     // ==========================================================
-      // НОВИЯТ УМЕН СКЕНЕР ЗА PDF (ГЕОГРАФСКИ КООРДИНАТИ) - ПОПРАВЕН
-      // ==========================================================
       async function processPDF(event) {
           const file = event.target.files[0]; if (!file) return; event.target.value = ''; 
           const { value: formValues } = await Swal.fire({ title: 'Детайли за плана', html: '<label style="display:block; text-align:left; font-size:14px; margin-bottom:5px;">Месец на плана:</label><input id="swal-month" class="swal2-input" value="Юни"><label style="display:block; text-align:left; font-size:14px; margin-top:15px; margin-bottom:5px;">Година:</label><input id="swal-year" type="number" class="swal2-input" value="2026">', focusConfirm: false, showCancelButton: true, confirmButtonText: 'Продължи', cancelButtonText: 'Отказ', preConfirm: () => [document.getElementById('swal-month').value.trim(), document.getElementById('swal-year').value.trim()] });
           if (!formValues) return; const [targetMonth, targetYear] = [formValues[0], parseInt(formValues[1])];
-          
           Swal.fire({ title: 'Прецизно сканиране...', text: 'Сверяване с Номенклатура и изолиране на колоните...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
 
           try {
-              // 1. ИЗТЕГЛЯНЕ НА НОМЕНКЛАТУРАТА ЗА СВЕРЯВАНЕ (ПОПРАВЕНА ЗАЯВКА С '*')
-              const { data: nomData, error: nomErr } = await client.from('Номенклатура').select('*');
-              if (nomErr) throw nomErr;
-              let nomSet = new Set();
-              if (nomData) {
-                  nomData.forEach(n => {
-                      if (n['ID Детайл']) nomSet.add(String(n['ID Детайл']).trim().toUpperCase());
-                      if (n['Вътрешно име']) nomSet.add(String(n['Вътрешно име']).trim().toUpperCase());
-                  });
-              }
-
-              // 2. ОБРАБОТКА НА PDF ЛИСТ ПО ЛИСТ
+              const { data: nomData, error: nomErr } = await client.from('Номенклатура').select('*'); if (nomErr) throw nomErr;
+              let nomSet = new Set(); if (nomData) { nomData.forEach(n => { if (n['ID Детайл']) nomSet.add(String(n['ID Детайл']).trim().toUpperCase()); if (n['Вътрешно име']) nomSet.add(String(n['Вътрешно име']).trim().toUpperCase()); }); }
               const arrayBuffer = await file.arrayBuffer(); const pdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise; let extractedPlan = []; 
               
               for (let i = 1; i <= pdf.numPages; i++) {
                   const page = await pdf.getPage(i); const content = await page.getTextContent();
                   let validItems = content.items.filter(item => item.str.trim() !== '').map(item => ({ text: item.str.trim(), x: item.transform[4], y: item.transform[5] }));
-                  
-                  // Групиране на текста по редове (с толеранс 5 пиксела по Y)
                   let rows = [];
-                  validItems.forEach(item => {
-                      let added = false;
-                      for (let row of rows) {
-                          if (Math.abs(row.y - item.y) < 5) { 
-                              row.items.push(item);
-                              added = true; break;
-                          }
-                      }
-                      if (!added) rows.push({ y: item.y, items: [item] });
-                  });
-
-                  // Анализ на всеки ред по координати X
+                  validItems.forEach(item => { let added = false; for (let row of rows) { if (Math.abs(row.y - item.y) < 5) { row.items.push(item); added = true; break; } } if (!added) rows.push({ y: item.y, items: [item] }); });
                   rows.forEach(row => {
-                      row.items.sort((a, b) => a.x - b.x); // Подреждане отляво надясно
-                      
-                      // Колона 1: Търсим число в най-лявата част (x < 80)
+                      row.items.sort((a, b) => a.x - b.x); 
                       let qtyIndex = row.items.findIndex(i => i.x < 80 && /^[\d,.]+$/.test(i.text.replace(/,/g, '')));
-                      
                       if (qtyIndex !== -1) {
                           let qtyItem = row.items[qtyIndex];
-                          
-                          // Колона 2: Търсим първия текст веднага след числото (между x=50 и x=250)
                           let partItem = row.items.find((i, idx) => idx > qtyIndex && i.x > 50 && i.x < 250);
-                          
                           if (partItem) {
                               let qty = parseInt(qtyItem.text.replace(/,/g, ''), 10);
                               let partCode = partItem.text.toUpperCase();
-                              
-                              // Елиминираме случайни заглавки (като думата QTY или PART)
                               if (qty > 0 && qty < 100000 && partCode.length > 2 && !partCode.includes("PART")) {
-                                  extractedPlan.push({ 
-                                      'ID Детайл': partCode, 
-                                      'Целево количество': qty, 
-                                      'Месец': targetMonth, 
-                                      'Година': targetYear, 
-                                      'Статус': 'Активен',
-                                      '_existsInNom': nomSet.has(partCode) // Временен маркер за червената аларма
-                                  });
+                                  extractedPlan.push({ 'ID Детайл': partCode, 'Целево количество': qty, 'Месец': targetMonth, 'Година': targetYear, 'Статус': 'Активен', _existsInNom: nomSet.has(partCode) });
                               }
                           }
                       }
@@ -432,18 +333,13 @@
 
               if (extractedPlan.length === 0) { Swal.fire('Внимание', 'Не открих валидни данни в първите две колони.', 'warning'); return; }
               
-              // 3. ВИЗУАЛИЗАЦИЯ И ЧЕРВЕНА АЛАРМА (ВАРИАНТ Б)
               let summaryHtml = `<div style="max-height: 350px; overflow-y: auto; text-align: left; font-size: 14px; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; background:#f8fafc;"><ol style="margin:0; padding-left:20px;">`;
               let hasWarnings = false;
 
               extractedPlan.forEach(p => {
-                  if (p._existsInNom) {
-                      summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0;"><b style="color: #16a34a; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#1e3a8a;">${p['ID Детайл']}</span></li>`;
-                  } else {
-                      hasWarnings = true;
-                      summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0; background-color: #fef2f2; padding: 6px; border-radius: 6px; border-left: 4px solid #dc2626;"><b style="color: #dc2626; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#dc2626;">${p['ID Детайл']}</span><br><span style="color:#991b1b; font-size:0.85em; font-weight:bold;">⚠️ Внимание: Този детайл липсва в Номенклатурата!</span></li>`;
-                  }
-                  delete p._existsInNom; // Задължително изтриваме маркера, за да не гръмне при запис
+                  if (p._existsInNom) { summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0;"><b style="color: #16a34a; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#1e3a8a;">${p['ID Детайл']}</span></li>`; } 
+                  else { hasWarnings = true; summaryHtml += `<li style="margin-bottom: 6px; padding-bottom:4px; border-bottom:1px dashed #e2e8f0; background-color: #fef2f2; padding: 6px; border-radius: 6px; border-left: 4px solid #dc2626;"><b style="color: #dc2626; font-size:1.1em;">${p['Целево количество']} бр.</b> — <span style="font-family:monospace; font-weight:bold; color:#dc2626;">${p['ID Детайл']}</span><br><span style="color:#991b1b; font-size:0.85em; font-weight:bold;">⚠️ Внимание: Този детайл липсва в Номенклатурата!</span></li>`; }
+                  delete p._existsInNom; 
               });
               summaryHtml += `</ol></div>`;
 
@@ -451,22 +347,16 @@
 
               const confirmRes = await Swal.fire({ title: titleText, html: '<p style="font-size:13px; color:#64748b; margin-top:0;">Списъкът е генериран само от първите 2 колони (Количество и Детайл):</p>' + summaryHtml, icon: hasWarnings ? 'warning' : 'question', showCancelButton: true, confirmButtonColor: '#4338ca', cancelButtonColor: '#94a3b8', confirmButtonText: '🚀 Зареди в плана', cancelButtonText: 'Отказ' });
               
-              if (confirmRes.isConfirmed) { 
-                  Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); 
-                  const { error } = await client.from('plan').insert(extractedPlan); 
-                  if (error) throw error; 
-                  Swal.fire({ icon: 'success', title: 'Успех!', text: `Планът беше добавен успешно.`, timer: 2000, showConfirmButton: false }); 
-                  loadCurrentTableData(); 
-              }
+              if (confirmRes.isConfirmed) { Swal.fire({ title: 'Записване...', allowOutsideClick: false, didOpen: () => Swal.showLoading() }); const { error } = await client.from('plan').insert(extractedPlan); if (error) throw error; Swal.fire({ icon: 'success', title: 'Успех!', text: `Планът беше добавен успешно.`, timer: 2000, showConfirmButton: false }); loadCurrentTableData(); }
           } catch (err) { console.error(err); Swal.fire('Грешка при импорта', err.message, 'error'); }
       }
 
       async function loadPersonnelSidebar() {
           const list = document.getElementById('sidebarList'); const loading = document.getElementById('sidebarLoading'); list.innerHTML = ''; loading.style.display = 'block';
           try {
-              const { data, error } = await client.from('chekiraniya').select('Имейл'); if (error) throw error;
+              const { data, error } = await client.from('personal').select('Имейл').eq('Статус', 'Активен'); if (error) throw error;
               let uniqueEmails = [...new Set(data.map(item => item['Имейл'] ? item['Имейл'].toLowerCase().trim() : ''))].filter(e => e !== ''); uniqueEmails.sort((a, b) => a.localeCompare(b)); loading.style.display = 'none';
-              if (uniqueEmails.length === 0) { list.innerHTML = '<li style="padding:15px; color:#94a3b8; text-align:center;">Няма служители</li>'; return; }
+              if (uniqueEmails.length === 0) { list.innerHTML = '<li style="padding:15px; color:#94a3b8; text-align:center;">Няма активни служители</li>'; return; }
               uniqueEmails.forEach(email => { const li = document.createElement('li'); li.className = 'sidebar-item'; li.innerHTML = `📁 <span>${email}</span>`; li.onclick = () => openWorkerFolder(email); list.appendChild(li); });
           } catch (err) { loading.innerText = 'Грешка: ' + err.message; }
       }
@@ -575,6 +465,9 @@
              if (isLate || (item['Бележка'] && item['Бележка'].includes('ИЗВЪН ОБЕКТА'))) { row.style.backgroundColor = '#fef2f2'; row.style.borderLeft = '5px solid #ef4444'; }
              else if (item['Действие'] === 'Авто излизане') { row.style.backgroundColor = '#fffbeb'; row.style.borderLeft = '5px solid #f59e0b'; }
           }
+          if (currentTab === 'personal') {
+              if (item['Статус'] === 'Блокиран') { row.style.backgroundColor = '#fef2f2'; row.style.color = '#991b1b'; }
+          }
 
           if (!config.readOnlyTab) {
               const tdCheck = document.createElement('td'); tdCheck.style.textAlign = 'center';
@@ -585,6 +478,13 @@
 
           config.fields.forEach(f => {
             if (f.hideOnAdd) return; const td = document.createElement('td'); let val = item[f.name] !== undefined && item[f.name] !== null ? item[f.name] : '';
+            
+            if (currentTab === 'personal' && f.name === 'Статус') {
+                if (val === 'Активен') td.innerHTML = `<span style="background:#dcfce7; color:#15803d; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.9em;">🟢 ${val}</span>`;
+                else td.innerHTML = `<span style="background:#fee2e2; color:#b91c1c; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.9em;">🛑 ${val}</span>`;
+                row.appendChild(td); return;
+            }
+
             if (currentTab === 'chekiraniya' && f.name === 'Време' && val) { try { td.innerHTML = `<b>${new Date(val).toLocaleString('bg-BG')}</b>`; } catch(e) { td.innerText = val; } row.appendChild(td); return; }
             if (currentTab === 'chekiraniya' && f.name === 'Действие') {
                 if (val === 'Влизане') td.innerHTML = `<span style="background:#dcfce7; color:#15803d; padding:4px 10px; border-radius:12px; font-weight:800; font-size:0.9em;">🟢 ${val}</span>`;
@@ -619,7 +519,7 @@
         const area = document.getElementById('formFieldsArea'); area.innerHTML = ''; const fields = tableConfigs[currentTab].fields;
         fields.forEach(f => {
           if (f.hideOnAdd && !isEditMode) return; const group = document.createElement('div'); group.className = 'form-group'; const label = document.createElement('label'); label.innerText = f.label || f.name; group.appendChild(label); let input;
-          if (f.type === 'select') { input = document.createElement('select'); f.options.forEach(opt => { const option = document.createElement('option'); option.value = opt; option.innerText = opt; input.appendChild(option); }); if (data && data[f.name]) input.value = data[f.name]; } 
+          if (f.type === 'select') { input = document.createElement('select'); f.options.forEach(opt => { const option = document.createElement('option'); option.value = opt; option.innerText = opt; input.appendChild(option); }); if (data && data[f.name]) input.value = data[f.name]; else if (f.def) input.value = f.def; } 
           else { input = document.createElement('input'); input.type = f.type === 'number' ? 'number' : 'text'; if (f.type === 'number') input.step = 'any'; if (data && data[f.name] !== undefined && data[f.name] !== null) input.value = data[f.name]; else if (f.def !== undefined) input.value = typeof f.def === 'function' ? f.def() : f.def; }
           input.id = 'inp_' + f.name; if (f.required) input.required = true;
           if (f.readonly || (isEditMode && f.readonlyOnEdit)) { input.readOnly = true; input.style.backgroundColor = '#f1f5f9'; input.style.color = '#64748b'; input.style.cursor = 'not-allowed'; if (f.type === 'select') input.disabled = true; }
