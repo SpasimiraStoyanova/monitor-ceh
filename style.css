@@ -72,8 +72,8 @@ body { font-family: 'Sofia Sans', sans-serif; background-color: var(--bg-color);
 .vsm-qty { font-size: 14px; font-weight: 800; color: #64748b; }
 
 /* ОПЕРАЦИИ */
-.vsm-ops { display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
-.op-text { white-space: nowrap; font-family: 'Sofia Sans', sans-serif; }
+.vsm-ops { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.op-text { white-space: normal; font-family: 'Sofia Sans', sans-serif; line-height: 1.2; word-wrap: break-word; max-width: 160px; display: inline-block; }
 
 /* Завършена операция (малка и зелена) */
 .op-past { font-size: 13px; font-weight: 600; color: #22c55e; opacity: 0.9; }
