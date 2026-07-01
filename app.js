@@ -586,8 +586,8 @@ function drawDashboard(jsonString) {
 
     const othersContainer = document.getElementById('w-small-others');
     if (othersContainer && othersContainer.innerHTML.trim() === '') {
-        const parentCol = othersContainer.closest('.col-lane');
-        if(parentCol) parentCol.style.display = 'none';
+        const parentDiv = othersContainer.parentElement;
+        if(parentDiv && parentDiv.classList.contains('col-lane') === false) parentDiv.style.display = 'none';
     }
 
     setTimeout(() => {
