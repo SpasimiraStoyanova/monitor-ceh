@@ -743,15 +743,17 @@ function drawArrows() {
             const winParent = cardParent.closest('.window-body');
             if (winChild !== winParent) return;
 
-            const sourceEl = cardChild.querySelector('.vsm-header');
+            const sourceTitle = cardChild.querySelector('.vsm-title');
+            const sourceQty = cardChild.querySelector('.vsm-qty');
             const targetEl = cardParent.querySelector('.vsm-title');
 
-            if (sourceEl && targetEl) {
-                const rs = sourceEl.getBoundingClientRect();
+            if (sourceTitle && targetEl) {
+                const rsTitle = sourceTitle.getBoundingClientRect();
+                const rsQty = sourceQty ? sourceQty.getBoundingClientRect() : rsTitle;
                 const rt = targetEl.getBoundingClientRect();
 
-                const startX = rs.right + window.scrollX + 4;
-                const startY = rs.top + window.scrollY + (rs.height / 2);
+                const startX = rsQty.right + window.scrollX + 4;
+                const startY = rsTitle.top + window.scrollY + (rsTitle.height / 2);
                 const endX = rt.left - 6 + window.scrollX;
                 const endY = rt.top + window.scrollY + (rt.height / 2);
                 
